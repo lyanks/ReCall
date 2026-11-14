@@ -1,0 +1,7 @@
+repo_url = "https://github.com/<owner>/<repo>"
+firebase = {
+  api_key     = "AIza..."
+  auth_domain = "<project>.firebaseapp.com"
+  project_id  = "<project>"
+  app_id      = "1:...:web:..."
+}

@@ -1,6 +1,6 @@
-# ЗБІРКА: user feedback report (template)
+# ReCall: user feedback report (template)
 
-Team: Uliana Kryshchuk, Olena Kulynyak, Sofiia Demenko · Prototype: <URL> · Dates: 14–18 Nov 2026
+Team: Uliana Kryshchuk, Olena Kulynyak, Sofiia Demenko · Prototype: <URL> · Dates: 14–18 Nov 2026 · Repo: <URL>
 
 ## 1. Who we talked to
 
@@ -36,8 +36,8 @@ Query: `select kind, count(*), count(distinct user_id) from events group by kind
 |---|---|---|
 | | | |
 
-## 5. Willingness to pay (bonus)
+## 5. Ready to pay with money (bonus)
 
-Donation jar / pre-order link, how many people paid, how much, screenshots.
+Donation to a volunteer cause (which fund, link), or a working payment in the product: how many people paid, how much, screenshots as evidence.
 
 ## 6. What we do next

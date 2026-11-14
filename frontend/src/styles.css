@@ -22,3 +22,5 @@ h2 { font-size: 16px; margin: 20px 0 8px; }
 .item a { color: var(--accent); font-weight: 600; text-decoration: none; }
 .snippet { font-size: 13px; margin: 6px 0 0; }
 .actions { display: flex; gap: 6px; align-items: flex-start; }
+button.google { padding: 10px; font-weight: 600; }
+.dev { background: #fff4d6; border-radius: 8px; padding: 6px 10px; font-size: 13px; }

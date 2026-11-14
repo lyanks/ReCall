@@ -227,3 +227,9 @@ __pycache__/
 *.db
 .pytest_cache/
 .env
+test.db
+local.db
+.terraform/
+*.tfstate*
+*.tfvars
+!*.tfvars.example

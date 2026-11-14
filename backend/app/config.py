@@ -1,12 +1,28 @@
+"""All settings come from environment variables (12-factor)."""
+
 import os
+from pathlib import Path
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./zbirka.db")
-# Render gives "postgres://..."; SQLAlchemy + psycopg 3 wants "postgresql+psycopg://..."
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-elif DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-only-change-me")
-JWT_TTL_HOURS = int(os.getenv("JWT_TTL_HOURS", "168"))
-CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
+def _db_url() -> str:
+    url = os.getenv("DATABASE_URL", "sqlite:///./local.db")
+    # Neon/Render give "postgres://" or "postgresql://"; SQLAlchemy + psycopg 3 wants "postgresql+psycopg://"
+    for prefix in ("postgres://", "postgresql://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
+DATABASE_URL = _db_url()
+
+# "firebase" in every deployed environment; "dev" only for local work and tests.
+AUTH_PROVIDER = os.getenv("AUTH_PROVIDER", "firebase")
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")
+
+# "thread" runs background jobs in-process; "inline" runs them immediately (tests).
+TASK_QUEUE = os.getenv("TASK_QUEUE", "thread")
+
+CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+
+# Built React app. When present, the API container also serves the frontend (one deploy).
+STATIC_DIR = Path(os.getenv("STATIC_DIR", Path(__file__).resolve().parents[2] / "frontend" / "dist"))
