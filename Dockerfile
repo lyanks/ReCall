@@ -5,11 +5,7 @@ WORKDIR /web
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ .
-# Firebase web config is public by design; it is baked into the JS bundle at build time.
-ARG VITE_FIREBASE_API_KEY=""
-ARG VITE_FIREBASE_AUTH_DOMAIN=""
-ARG VITE_FIREBASE_PROJECT_ID=""
-ARG VITE_FIREBASE_APP_ID=""
+# Firebase web config comes from frontend/.env.production (public values).
 RUN npm run build
 
 FROM python:3.12-slim

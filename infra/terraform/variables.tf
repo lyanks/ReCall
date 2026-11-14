@@ -13,14 +13,10 @@ variable "branch" {
   default = "main"
 }
 
-variable "firebase" {
-  description = "Firebase web config (public values) + project id for token checks"
-  type = object({
-    api_key     = string
-    auth_domain = string
-    project_id  = string
-    app_id      = string
-  })
+variable "firebase_project_id" {
+  description = "Firebase project whose ID tokens the API accepts"
+  type        = string
+  default     = "recall-ucu-edu"
 }
 
 variable "render_plan" {

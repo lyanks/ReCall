@@ -68,7 +68,7 @@ Dockerfile  the one production image
 
 ## Run locally
 
-**Without Docker** (SQLite, dev sign-in by email only, no Firebase needed):
+**Without Docker** (SQLite, dev sign-in by email only, no internet needed for auth):
 
 ```bash
 cd backend
@@ -83,7 +83,7 @@ npm install
 npm run dev                                            # app: http://localhost:5173
 ```
 
-**With Docker** (Postgres + the production image, dev sign-in):
+**With Docker** (Postgres + the production image, real Firebase sign-in):
 
 ```bash
 docker compose -f infra/docker-compose.yml up --build  # http://localhost:8000
@@ -98,34 +98,39 @@ New migration after changing a model: `cd backend && alembic revision --autogene
 | Variable | Used by | Meaning |
 |---|---|---|
 | `DATABASE_URL` | API | Postgres URL (Neon); defaults to local SQLite |
-| `AUTH_PROVIDER` | API | `firebase` (default, production) or `dev` (local only) |
-| `FIREBASE_PROJECT_ID` | API | Firebase project whose ID tokens are accepted |
-| `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` | frontend build | Firebase web config (public values). Empty API key = dev mode |
-| `TASK_QUEUE` | API | `thread` (default) or `inline` |
+| `AUTH_PROVIDER` | API | `firebase` (default) or `dev` (local only: sign in by email, no password) |
+| `FIREBASE_PROJECT_ID` | API | Firebase project whose ID tokens are accepted; defaults to `recall-ucu-edu` |
+| `TASK_QUEUE` | API | `thread` (default) or `inline` (tests) |
+
+The Firebase **web** config (`apiKey`, `authDomain`, …) is in `frontend/.env.production`. These values are public by design and end up in the JS bundle anyway; access is protected by Firebase's authorized-domains list. `npm run dev` without `.env.local` runs in dev mode.
 
 ## Deploy
 
-### 1. Firebase (auth)
-1. [console.firebase.google.com](https://console.firebase.google.com) → **Add project** (Analytics not needed).
-2. **Build → Authentication → Get started** → enable **Email/Password** and **Google**.
-3. **Project settings → Your apps → Web (`</>`)** → register an app, copy `apiKey`, `authDomain`, `projectId`, `appId`.
-4. After the app is deployed: **Authentication → Settings → Authorized domains** → add the Render domain (e.g. `recall.onrender.com`).
+Firebase project: `recall-ucu-edu` (Authentication → Email/Password and Google enabled).
 
-### 2a. Hosting with Terraform
+### 1. Database: Neon
+[neon.tech](https://neon.tech) → **New project** → name `recall`, region **AWS Europe Central (Frankfurt)** → copy the connection string (`postgresql://…`).
+
+### 2. App: Render
+1. [render.com](https://render.com) → sign in with GitHub → **New → Web Service** → pick `lyanks/ReCall`.
+2. Language **Docker**, branch `main`, region **Frankfurt**, instance type **Free**.
+3. **Environment variables:** `DATABASE_URL` = the Neon string. Nothing else is required.
+4. **Advanced → Health Check Path:** `/api/health`. **Auto-Deploy:** off (CI deploys after tests pass).
+5. Create. The first build takes ~3–5 minutes; migrations run automatically on start.
+
+### 3. Let Firebase accept the new domain
+Firebase console → **Authentication → Settings → Authorized domains → Add domain** → your Render host, e.g. `recall-xxxx.onrender.com`. Without this, Google sign-in fails with `auth/unauthorized-domain`.
+
+### 4. CI/CD
+Render → service → **Settings → Deploy Hook** → copy the URL → GitHub repo → **Settings → Secrets and variables → Actions → New repository secret** `RENDER_DEPLOY_HOOK_URL`. From then on every push to `main` runs tests → Docker build → deploy.
+
+### Alternative: Terraform (Render + Neon as code)
 ```bash
 cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars   # fill repo URL + Firebase values
+cp terraform.tfvars.example terraform.tfvars
 export RENDER_API_KEY=... RENDER_OWNER_ID=... NEON_API_KEY=...
 terraform init && terraform apply
 ```
-Note: the Render provider documents paid plans; if it rejects `free`, use 2b for the web service and keep only Neon in Terraform.
-
-### 2b. Hosting by hand (same result)
-1. [neon.tech](https://neon.tech) → new project (region Frankfurt) → copy the connection string.
-2. [render.com](https://render.com) → **New → Web Service** → this repo → runtime **Docker**, plan **Free**, region Frankfurt, health check path `/api/health`.
-3. Environment: `DATABASE_URL` (from Neon), `AUTH_PROVIDER=firebase`, `FIREBASE_PROJECT_ID`, and the four `VITE_FIREBASE_*` values (Render passes them to the Docker build).
-
-### 3. CI/CD
-Render → service → **Settings → Deploy Hook** → copy the URL → GitHub repo → **Settings → Secrets → Actions** → `RENDER_DEPLOY_HOOK_URL`. Turn off Render's own auto-deploy, so every push to `main` deploys only after tests pass.
+The Render provider documents paid plans; if it rejects `free`, create the web service by hand (step 2) and keep only Neon in Terraform.
 
 Free-tier notes: the service sleeps after 15 minutes idle (the first request takes ~50 s, so open it a minute before the demo).

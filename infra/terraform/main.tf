@@ -25,12 +25,8 @@ resource "render_web_service" "app" {
   health_check_path = "/api/health"
 
   env_vars = {
-    DATABASE_URL              = { value = neon_project.db.connection_uri }
-    AUTH_PROVIDER             = { value = "firebase" }
-    FIREBASE_PROJECT_ID       = { value = var.firebase.project_id }
-    VITE_FIREBASE_API_KEY     = { value = var.firebase.api_key }
-    VITE_FIREBASE_AUTH_DOMAIN = { value = var.firebase.auth_domain }
-    VITE_FIREBASE_PROJECT_ID  = { value = var.firebase.project_id }
-    VITE_FIREBASE_APP_ID      = { value = var.firebase.app_id }
+    DATABASE_URL        = { value = neon_project.db.connection_uri }
+    AUTH_PROVIDER       = { value = "firebase" }
+    FIREBASE_PROJECT_ID = { value = var.firebase_project_id }
   }
 }

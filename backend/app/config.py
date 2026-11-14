@@ -17,7 +17,7 @@ DATABASE_URL = _db_url()
 
 # "firebase" in every deployed environment; "dev" only for local work and tests.
 AUTH_PROVIDER = os.getenv("AUTH_PROVIDER", "firebase")
-FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "recall-ucu-edu")
 
 # "thread" runs background jobs in-process; "inline" runs them immediately (tests).
 TASK_QUEUE = os.getenv("TASK_QUEUE", "thread")
