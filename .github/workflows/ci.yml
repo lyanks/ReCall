@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+
+env:
+  APP_URL: https://recall-ojro.onrender.com
 
 jobs:
   test:
@@ -25,6 +29,7 @@ jobs:
 
   build:
     needs: test
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,3 +47,25 @@ jobs:
         run: |
           if [ -z "$HOOK" ]; then echo "RENDER_DEPLOY_HOOK_URL not set, skipping deploy"; exit 0; fi
           curl -fsS -X POST "$HOOK"
+
+  smoke:
+    # Checks the live site. Runs after a deploy, or by hand (Actions -> CI/CD -> Run workflow).
+    needs: deploy
+    if: always() && (needs.deploy.result == 'success' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for the live site to be healthy
+        run: |
+          # free Render instances sleep; give it up to ~5 minutes (also covers a fresh deploy)
+          for i in $(seq 1 30); do
+            if curl -fsS -m 20 "$APP_URL/api/health"; then echo; break; fi
+            sleep 10
+          done
+          curl -fsS -m 20 "$APP_URL/api/health"
+      - name: Check page and API contract
+        run: |
+          set -x
+          curl -fsS "$APP_URL/" | grep -q "<title>ReCall</title>"
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/items")" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer dev:a@b.c' "$APP_URL/api/me")" = 401
+          curl -fsS "$APP_URL/api/openapi.json" > /dev/null

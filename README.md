@@ -6,7 +6,7 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 
 **Team:** Uliana Kryshchuk · Olena Kulynyak · Sofiia Demenko
 
-**Live prototype:** _add the URL here after deploy_
+**Live prototype:** https://recall-ojro.onrender.com (free tier: the first visit after a quiet period takes ~50 s to wake up)
 
 ## What works now (v0.2)
 
