@@ -63,19 +63,19 @@ class IngestionService:
             log.exception("AI digest failed for item %s", item.id)
             return
         item.summary, item.summary_en = d.summary_uk, d.summary_en
-        item.key_topics, item.keywords = d.key_topics, " ".join(d.keywords)
+        item.key_topics, item.keywords = d.key_topics, " ".join(d.keywords) or item.title or item.url
         # The keyword rules know only a few subjects; let the model file what they could not.
         if may_set_topic and item.topic == UNSORTED and d.topic:
             item.topic = d.topic
         db.commit()
 
     def backfill(self, limit: int = 300) -> None:
-        """Digest items saved before the LLM was configured (runs once at start-up, in the background)."""
+        """Digest items that have none yet (saved before the key, or cleared to regenerate). Runs at start-up."""
         if not self.llm.enabled:
             return
         db: Session = self.session_factory()
         try:
-            items = db.scalars(select(Item).where(Item.status == "ready", Item.summary == "")
+            items = db.scalars(select(Item).where(Item.status == "ready", Item.keywords == "")
                                .order_by(Item.id.desc()).limit(limit)).all()
             for item in items:
                 self._digest(db, item, may_set_topic=False)
