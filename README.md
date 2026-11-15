@@ -16,6 +16,7 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 - Library as a grid of topic tiles; move an item to an existing topic or create a new one; delete with confirmation.
 - Search ranks by individual words (stems, typos, site name and URL count too; "mini games" finds "minigames.com"), with the matching passage shown.
 - **With an Anthropic API key (optional):** every saved link gets a 2–3 sentence summary (Ukrainian + English) and key topics from Claude; YouTube uses the video's subtitles when YouTube lets us read them. Search then works **by meaning and across languages** (a Ukrainian query finds an English article). Links the keyword rules cannot file get a topic from Claude. Without the key everything above keeps working as before.
+- Ukrainian and English interface: the user picks the language on the sign-in screen or in Settings (default follows the browser). AI summaries are shown in the chosen language.
 - Usage events (sign-up, sign-in, add, search) for the validation metrics in the feedback report.
 
 Planned next: PDF upload and text extraction, exam prep (summary or self-check questions per topic), Telegram bot.

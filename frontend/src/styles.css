@@ -267,3 +267,9 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 .topic-option:hover { border-color: var(--accent); color: var(--accent); }
 .topic-option .muted { margin-left: 2px; font-size: 12px; }
 .page-title + .item-list, .page-title + .error { margin-top: 20px; }
+
+/* ---------- language switch (i18n) ---------- */
+.auth { position: relative; }
+.auth-lang { position: absolute; top: 14px; right: 14px; }
+.segmented.lang-compact { padding: 3px; }
+.segmented.lang-compact button { height: 30px; padding: 0 10px; font-size: 13px; font-weight: 600; }

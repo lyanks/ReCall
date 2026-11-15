@@ -1,40 +1,42 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../api.js";
-import { topicLabel } from "../sources.js";
+import { useT } from "../i18n.jsx";
 import { Dialog } from "./Dialog.jsx";
 
 /** Pick one of the user's existing topics, or type a new one. */
 export function TopicDialog({ current, onConfirm, onCancel }) {
+  const t = useT();
   const [topics, setTopics] = useState(null);
   const [value, setValue] = useState("");
   useEffect(() => { api("/topics").then(setTopics).catch(() => setTopics([])); }, []);
 
   const q = value.trim().toLowerCase();
   const shown = useMemo(
-    () => (topics || []).filter((t) => t.name !== current && (!q || t.name.toLowerCase().includes(q))),
-    [topics, q, current],
+    () => (topics || []).filter((x) => x.name !== current && (!q || x.name.toLowerCase().includes(q) || t.topic(x.name).toLowerCase().includes(q))),
+    [topics, q, current, t],
   );
-  const exists = (topics || []).some((t) => t.name.toLowerCase() === q);
+  const match = (topics || []).find((x) => x.name.toLowerCase() === q || t.topic(x.name).toLowerCase() === q);
+  const exists = Boolean(match);
 
   return (
-    <Dialog title="Обрати тему" onClose={onCancel}>
-      <p className="muted small">Зараз: <span className="chip">{topicLabel(current)}</span></p>
-      <input autoFocus placeholder="Знайти або створити тему…" value={value} maxLength={120}
+    <Dialog title={t("topic.title")} onClose={onCancel}>
+      <p className="muted small">{t("topic.current")} <span className="chip">{t.topic(current)}</span></p>
+      <input autoFocus placeholder={t("topic.placeholder")} value={value} maxLength={120}
         onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" && value.trim()) onConfirm(shown.length === 1 && !exists ? shown[0].name : value.trim()); }} />
-      <div className="topic-picker" role="listbox" aria-label="Наявні теми">
-        {topics === null && <span className="muted small">Завантажую…</span>}
-        {shown.map((t) => (
-          <button key={t.name} role="option" className="topic-option" onClick={() => onConfirm(t.name)}>
-            {topicLabel(t.name)} <span className="muted">{t.count}</span>
+        onKeyDown={(e) => { if (e.key === "Enter" && value.trim()) onConfirm(match ? match.name : shown.length === 1 ? shown[0].name : value.trim()); }} />
+      <div className="topic-picker" role="listbox" aria-label={t("topic.existing")}>
+        {topics === null && <span className="muted small">{t("topic.loading")}</span>}
+        {shown.map((x) => (
+          <button key={x.name} role="option" className="topic-option" onClick={() => onConfirm(x.name)}>
+            {t.topic(x.name)} <span className="muted">{x.count}</span>
           </button>
         ))}
-        {topics && shown.length === 0 && !value.trim() && <span className="muted small">Інших тем ще немає.</span>}
+        {topics && shown.length === 0 && !value.trim() && <span className="muted small">{t("topic.noOthers")}</span>}
       </div>
       <div className="dialog-actions">
-        <button type="button" onClick={onCancel}>Скасувати</button>
+        <button type="button" onClick={onCancel}>{t("common.cancel")}</button>
         {value.trim() && !exists && (
-          <button className="primary" onClick={() => onConfirm(value.trim())}>Створити «{value.trim()}»</button>
+          <button className="primary" onClick={() => onConfirm(value.trim())}>{t("topic.create", { name: value.trim() })}</button>
         )}
       </div>
     </Dialog>
