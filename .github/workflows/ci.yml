@@ -53,19 +53,26 @@ jobs:
     needs: deploy
     if: always() && (needs.deploy.result == 'success' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Wait for the live site to be healthy
+      - uses: actions/checkout@v4
+      - name: Wait until this commit's version is live
         run: |
-          # free Render instances sleep; give it up to ~5 minutes (also covers a fresh deploy)
-          for i in $(seq 1 30); do
-            if curl -fsS -m 20 "$APP_URL/api/health"; then echo; break; fi
-            sleep 10
+          expected=$(grep -oP 'version="\K[^"]+' backend/app/main.py)
+          # free Render instances sleep and take ~5 min to rebuild; wait up to ~15 min
+          for i in $(seq 1 60); do
+            live=$(curl -fsS -m 20 "$APP_URL/api/openapi.json" 2>/dev/null | jq -r .info.version 2>/dev/null || true)
+            echo "try $i: live=${live:-down} expected=$expected"
+            [ "$live" = "$expected" ] && break
+            sleep 15
           done
-          curl -fsS -m 20 "$APP_URL/api/health"
+          echo "::notice title=Live version::${live:-down} (expected $expected)"
+          [ "$live" = "$expected" ]
       - name: Check page and API contract
         run: |
           set -x
+          curl -fsS "$APP_URL/api/health"
           curl -fsS "$APP_URL/" | grep -q "<title>ReCall</title>"
           test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/items")" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL/api/stats/me")" = 401
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer dev:a@b.c' "$APP_URL/api/me")" = 401
-          curl -fsS "$APP_URL/api/openapi.json" > /dev/null

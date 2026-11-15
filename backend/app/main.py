@@ -17,7 +17,7 @@ from .platform.tasks import InlineTaskQueue, ThreadTaskQueue
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="ReCall API", version="0.2.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
+    app = FastAPI(title="ReCall API", version="0.3.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
     # ---- wire adapters to ports ----
     app.state.auth = (DevAuthVerifier() if config.AUTH_PROVIDER == "dev"
