@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text
+from sqlalchemy import false as sa_false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ...db import Base
@@ -16,12 +17,16 @@ class Item(Base):
     source_type: Mapped[str] = mapped_column(String(20))  # web | youtube | pdf
     url: Mapped[str] = mapped_column(Text)
     title: Mapped[str] = mapped_column(Text, default="")
+    # the user renamed it: fetching the source again keeps their title
+    custom_title: Mapped[bool] = mapped_column(Boolean, default=False, server_default=sa_false())
+    image_url: Mapped[str] = mapped_column(Text, default="", server_default="")  # preview picture
     topic: Mapped[str] = mapped_column(String(120), default="Unsorted")
     text: Mapped[str] = mapped_column(Text, default="")
     # AI digest (empty when no LLM is configured or it has not run yet)
     summary: Mapped[str] = mapped_column(Text, default="", server_default="")
     summary_en: Mapped[str] = mapped_column(Text, default="", server_default="")
     key_topics: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
+    key_topics_en: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
     keywords: Mapped[str] = mapped_column(Text, default="", server_default="")
     # the user's own key phrases (e.g. for a TikTok whose content we could not read)
     tags: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")

@@ -38,6 +38,7 @@ class _DigestOut(BaseModel):
     summary_uk: str = Field(description="1-2 short factual sentences in Ukrainian (max 30 words), or empty if the text is too thin")
     summary_en: str = Field(description="The same summary in English, or empty")
     key_topics: list[str] = Field(description="3-5 short key topics (1-3 words each) in Ukrainian")
+    key_topics_en: list[str] = Field(description="The same key topics in English, in the same order")
     keywords: list[str] = Field(description="10-20 search terms: key concepts and synonyms in BOTH Ukrainian and English")
     topic: str = Field(description="Best study topic for this material: one of the existing topics if it fits, "
                                    "otherwise a short new subject name in English (1-3 words); empty if unclear")
@@ -108,6 +109,7 @@ class ClaudeClient:
             key_topics=[t.strip() for t in out.key_topics if t.strip()][:5],
             keywords=[k.strip() for k in out.keywords if k.strip()][:25],
             topic=out.topic.strip()[:120],
+            key_topics_en=[t.strip() for t in out.key_topics_en if t.strip()][:5],
         )
 
     def pick_relevant(self, query: str, cards: Sequence[Card]) -> list[int]:

@@ -38,7 +38,10 @@ class IngestionService:
                 return
             try:
                 ex = self._extractor_for(item.url).extract(item.url)
-                item.title, item.text = ex.title or item.url, ex.text
+                if not item.custom_title:
+                    item.title = ex.title or item.url
+                item.text = ex.text
+                item.image_url = ex.image or item.image_url
                 if not keep_topic:
                     item.topic = self.classifier.classify(ex.title, ex.text)
                 item.status = "ready"
@@ -63,7 +66,7 @@ class IngestionService:
             log.exception("AI digest failed for item %s", item.id)
             return
         item.summary, item.summary_en = d.summary_uk, d.summary_en
-        item.key_topics, item.keywords = d.key_topics, " ".join(d.keywords) or item.title or item.url
+        item.key_topics, item.key_topics_en, item.keywords = d.key_topics, d.key_topics_en, " ".join(d.keywords) or item.title or item.url
         # The keyword rules know only a few subjects; let the model file what they could not.
         if may_set_topic and item.topic == UNSORTED and d.topic:
             item.topic = d.topic

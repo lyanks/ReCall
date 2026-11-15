@@ -25,6 +25,7 @@ class ItemCreate(BaseModel):
 
 
 class ItemUpdate(BaseModel):
+    title: str | None = Field(None, max_length=300, description="Empty = back to the title from the source")
     topic: str | None = Field(None, min_length=1, max_length=120)
     tags: list[Tag] | None = Field(None, max_length=15)
 
@@ -47,6 +48,8 @@ class ItemOut(BaseModel):
     summary: str = ""
     summary_en: str = ""
     key_topics: list[str] = []
+    key_topics_en: list[str] = []
+    image_url: str = ""
     tags: list[str] = []
     needs_tags: bool = False
     created_at: datetime
@@ -57,6 +60,7 @@ def to_out(item: Item, snippet: str | None = None) -> ItemOut:
     return ItemOut(id=item.id, source_type=item.source_type, url=item.url, title=item.title or item.url,
                    topic=item.topic, status=item.status, snippet=snippet, summary=item.summary or "",
                    summary_en=item.summary_en or "", key_topics=item.key_topics or [], tags=item.tags or [],
+                   key_topics_en=item.key_topics_en or [], image_url=item.image_url or "",
                    needs_tags=needs_tags(item), created_at=item.created_at)
 
 
@@ -150,10 +154,19 @@ def refresh_item(item_id: int, request: Request, user: User = Depends(current_us
 
 
 @router.patch("/{item_id}", response_model=ItemOut)
-def update_item(item_id: int, body: ItemUpdate, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def update_item(item_id: int, body: ItemUpdate, request: Request, user: User = Depends(current_user), db: Session = Depends(get_db)):
     item = _own(item_id, user, db)
     if body.topic is not None:
         item.topic = body.topic.strip()
+    if body.title is not None:
+        title = " ".join(body.title.split())
+        item.custom_title = bool(title)
+        if title:
+            item.title = title
+        else:  # back to the source's own title
+            item.status = "processing"
+            db.commit()
+            request.app.state.tasks.enqueue(request.app.state.ingestion.process, item.id, True)
     if body.tags is not None:
         seen, tags = set(), []
         for t in body.tags:  # keep order, drop duplicates (case-insensitive)
