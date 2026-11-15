@@ -7,6 +7,8 @@ import { TopicDialog } from "./TopicDialog.jsx";
 
 function ItemCard({ item, showTopic, onEdit, onDelete }) {
   const t = useT();
+  // AI summary in the interface language; fall back to the other language if only one exists
+  const summary = t.lang === "en" ? item.summary_en || item.summary : item.summary || item.summary_en;
   return (
     <article className="card item">
       <SourceIcon type={item.source_type} />
@@ -18,7 +20,13 @@ function ItemCard({ item, showTopic, onEdit, onDelete }) {
           {item.status === "processing" && <span className="status processing">{t("item.processing")}</span>}
           {item.status === "failed" && <span className="error status">{t("item.failed")}</span>}
         </div>
-        {item.snippet && <p className="snippet">{item.snippet}</p>}
+        {summary
+          ? <p className="snippet summary" title={t("item.aiSummary")}>{summary}</p>
+          : item.snippet && <p className="snippet">{item.snippet}</p>}
+        {/* key topics are generated in Ukrainian only, so show them in the Ukrainian interface */}
+        {t.lang === "uk" && item.key_topics?.length > 0 && (
+          <div className="tags">{item.key_topics.map((k) => <span key={k} className="tag">{k}</span>)}</div>
+        )}
       </div>
       <div className="actions">
         <button className="ghost icon" onClick={() => onEdit(item)} title={t("item.changeTopic")} aria-label={t("item.changeTopic")}>

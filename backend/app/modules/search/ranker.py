@@ -15,7 +15,7 @@ STOPWORDS = {
     "і", "й", "та", "в", "у", "на", "з", "із", "зі", "до", "по", "про", "що", "де", "як", "це", "той", "та",
     "відео", "сайт", "сторінка", "стаття", "який", "яка", "яке", "які", "мене", "мій", "моя", "там",
 }
-FIELDS = (("title", 3.0), ("topic", 2.0), ("url", 2.0), ("text", 1.0))
+FIELDS = (("title", 3.0), ("topic", 2.0), ("url", 2.0), ("ai", 1.5), ("text", 1.0))
 WORD = re.compile(r"[\w']+", re.UNICODE)
 
 
@@ -46,6 +46,7 @@ class KeywordRanker:
         for d in docs:
             fields = {
                 "title": d.title, "topic": d.topic, "url": d.url, "text": d.text,
+                "ai": f"{d.summary} {d.keywords}",
             }
             norm = {k: " ".join(words(v)) for k, v in fields.items()}
             compact = {k: v.replace(" ", "") for k, v in norm.items()}
