@@ -1,7 +1,7 @@
 """Uploaded files (PDF, DOCX, PPTX, TXT/MD, images) stored next to their items
 
 Revision ID: e2a9c4d71f30
-Revises: c3e8f1a27d64
+Revises: d5f0a3b6c812
 Create Date: 2026-11-15 18:00:00
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = 'e2a9c4d71f30'
-down_revision: Union[str, None] = 'c3e8f1a27d64'
+down_revision: Union[str, None] = 'd5f0a3b6c812'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

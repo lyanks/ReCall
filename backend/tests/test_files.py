@@ -181,4 +181,5 @@ def test_image_goes_to_ai_as_picture(llm):
     item = client.get(f"/api/items/{r.json()['id']}", headers=h()).json()
     assert llm.calls[-1]["image"] == ("image/png", PNG)
     assert item["summary"].startswith("Фото") and not item["needs_tags"]
+    assert item["image_url"] == item["url"]  # the photo is its own preview
     assert item["id"] in [i["id"] for i in client.get("/api/items", params={"q": "graph"}, headers=h()).json()]

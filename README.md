@@ -19,7 +19,9 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 - Ukrainian and English interface: the user picks the language on the sign-in screen or in Settings (default follows the browser). AI summaries are shown in the chosen language.
 - Usage events (sign-up, sign-in, add, search) for the validation metrics in the feedback report.
 
-Planned next: PDF upload and text extraction, exam prep (summary or self-check questions per topic), Telegram bot.
+- **File upload:** drag a file onto the page or pick one (PDF, DOCX, PPTX, TXT, MD, PNG/JPG/WebP). Text is extracted in the background and the file opens again from its card. Limits so a 1000-page file cannot burn tokens: up to 10 MB per file (photos 5 MB), only the first 30 PDF pages / 60 slides are read, **the AI sees only the first 12,000 characters (≈ 8 pages, ~3–4k tokens)** while keyword search uses all the extracted text, 30 uploads a day and 100 MB of files per account. Photos of notes go to Claude as an image.
+
+Planned next: exam prep (summary or self-check questions per topic), Telegram bot.
 
 ## Architecture
 
@@ -58,7 +60,8 @@ Planned next: PDF upload and text extraction, exam prep (summary or self-check q
 | CI/CD | GitHub Actions: tests → Docker build → deploy hook | |
 | Infrastructure | **Terraform** (Render + Neon providers) | IaC without AWS |
 | Hosting | Option B, PaaS: **Render** (container) + **Neon** (Postgres) | free tiers, nothing to administer |
-| Not yet | Redis, object storage + CDN, staging | no hot reads, no file uploads, one environment so far |
+| File storage | bytes in Postgres (`files` table) behind a `FileStore` port | files are capped at 10 MB and Render's disk is wiped on every deploy; Neon already backs up the DB. Swap in an S3-compatible adapter (Cloudflare R2) when files or the 0.5 GB Neon limit grow |
+| Not yet | Redis, object storage + CDN, staging | no hot reads, files are small, one environment so far |
 
 ## AI: why no embeddings
 
