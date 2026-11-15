@@ -125,3 +125,12 @@ def test_no_key_means_no_ai():
 ])
 def test_youtube_video_id(url, vid):
     assert YouTubeExtractor.video_id(url) == vid
+
+
+def test_hedging_sentences_are_dropped():
+    from app.modules.ai.adapters import clean_summary
+
+    assert clean_summary("Текст містить лише назву, тож точний зміст невідомий; ймовірно, йдеться про ООП.") == ""
+    assert clean_summary("Патерн Observer: видавець сповіщає підписників. Ймовірно, є приклад коду.") == \
+        "Патерн Observer: видавець сповіщає підписників."
+    assert clean_summary("Probably about sorting. Merge sort in O(n log n).") == "Merge sort in O(n log n)."

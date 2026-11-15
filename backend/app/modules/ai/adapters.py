@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 from typing import Sequence
 
 from pydantic import BaseModel, Field
@@ -9,6 +10,16 @@ from pydantic import BaseModel, Field
 from .ports import Card, Digest
 
 log = logging.getLogger(__name__)
+
+
+# Sentences that only hedge about missing content. The prompt forbids them; this is a safety net.
+HEDGES = re.compile(r"ймовірно|імовірно|зміст невідом|лише назв|тільки назв|"
+                    r"\b(likely|probably|presumably|only (the |a )?title)\b", re.IGNORECASE)
+
+
+def clean_summary(text: str) -> str:
+    sentences = re.split(r"(?<=[.!?…])\s+", text.strip())
+    return " ".join(s for s in sentences if s and not HEDGES.search(s)).strip()
 
 
 class NoLLM:
@@ -24,8 +35,8 @@ class NoLLM:
 
 
 class _DigestOut(BaseModel):
-    summary_uk: str = Field(description="2-3 sentences in Ukrainian: what this material explains or shows")
-    summary_en: str = Field(description="The same summary in English")
+    summary_uk: str = Field(description="1-2 short factual sentences in Ukrainian (max 30 words), or empty if the text is too thin")
+    summary_en: str = Field(description="The same summary in English, or empty")
     key_topics: list[str] = Field(description="3-5 short key topics (1-3 words each) in Ukrainian")
     keywords: list[str] = Field(description="10-20 search terms: key concepts and synonyms in BOTH Ukrainian and English")
     topic: str = Field(description="Best study topic for this material: one of the existing topics if it fits, "
@@ -37,10 +48,18 @@ class _PickOut(BaseModel):
 
 
 DIGEST_SYSTEM = """You help a university student organise study materials they saved (web pages, YouTube videos, \
-TikTok/Instagram posts, PDFs). Given the extracted text of one material, describe it so the student can recall \
-it later and find it by meaning. Be concrete and factual: name the actual concepts, methods and examples. \
-Do not invent content that is not in the text; if the text is very short (only a title or caption), \
-keep the summary short and say what the material is likely about. No marketing tone."""
+TikTok/Instagram posts, PDFs). Given the extracted text of one material, write what it is about so the student \
+can recall it later.
+
+Rules for the summary:
+- 1-2 short sentences, at most 30 words. Only the substance: the concrete concepts, methods, examples.
+- State facts from the text directly. No filler, no intro ("This article...", "The video explains..." is fine \
+only if short), no evaluation, no marketing tone.
+- Never guess and never comment on the input: do not write that the text is short, that only a title is \
+available, that the content is unknown, or what the material "probably" or "likely" covers.
+- If the text is too thin to say anything concrete, return an empty string for both summaries.
+
+Key topics and keywords may still be filled from the title when the summary is empty."""
 
 PICK_SYSTEM = """You are the search engine of a student's personal library of study materials. \
 Given a query and the library (one card per material), return the ids of materials that are relevant to the \
@@ -84,8 +103,8 @@ class ClaudeClient:
         )
         out: _DigestOut = self._ask(DIGEST_SYSTEM, user, _DigestOut, max_tokens=4000, timeout=60.0)
         return Digest(
-            summary_uk=out.summary_uk.strip(),
-            summary_en=out.summary_en.strip(),
+            summary_uk=clean_summary(out.summary_uk),
+            summary_en=clean_summary(out.summary_en),
             key_topics=[t.strip() for t in out.key_topics if t.strip()][:5],
             keywords=[k.strip() for k in out.keywords if k.strip()][:25],
             topic=out.topic.strip()[:120],
