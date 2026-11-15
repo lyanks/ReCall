@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import config
 from .db import SessionLocal
+from .modules.ai.adapters import ClaudeClient, NoLLM
 from .modules.analytics import api as analytics_api
 from .modules.identity import api as identity_api
 from .modules.identity.adapters import DevAuthVerifier, FirebaseAuthVerifier
@@ -14,25 +15,30 @@ from .modules.ingestion.adapters import DEFAULT_EXTRACTORS, KeywordTopicClassifi
 from .modules.ingestion.service import IngestionService
 from .modules.library import api as library_api
 from .modules.search.ranker import KeywordRanker
+from .modules.search.semantic import SemanticSearch
 from .platform.tasks import InlineTaskQueue, ThreadTaskQueue
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="ReCall API", version="0.4.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
+    app = FastAPI(title="ReCall API", version="0.5.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
     # ---- wire adapters to ports ----
     app.state.auth = (DevAuthVerifier() if config.AUTH_PROVIDER == "dev"
                       else FirebaseAuthVerifier(config.FIREBASE_PROJECT_ID))
     app.state.tasks = InlineTaskQueue() if config.TASK_QUEUE == "inline" else ThreadTaskQueue()
-    app.state.search = KeywordRanker()
-    app.state.ingestion = IngestionService(DEFAULT_EXTRACTORS, KeywordTopicClassifier(), SessionLocal)
+    app.state.llm = ClaudeClient(config.ANTHROPIC_API_KEY, config.AI_MODEL) if config.ANTHROPIC_API_KEY else NoLLM()
+    app.state.search = SemanticSearch(app.state.llm, fallback=KeywordRanker())
+    app.state.ingestion = IngestionService(DEFAULT_EXTRACTORS, KeywordTopicClassifier(), SessionLocal, app.state.llm)
+    if app.state.llm.enabled:
+        # summaries for items saved before the key was added
+        app.state.tasks.enqueue(app.state.ingestion.backfill)
 
     if config.CORS_ORIGINS:
         app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok"}
+        return {"status": "ok", "ai": app.state.llm.enabled}
 
     app.include_router(identity_api.router, prefix="/api")
     app.include_router(library_api.router, prefix="/api")

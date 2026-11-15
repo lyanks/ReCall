@@ -17,7 +17,12 @@ function ItemCard({ item, showTopic, onEdit, onDelete }) {
           {item.status === "processing" && <span className="status processing">обробляю…</span>}
           {item.status === "failed" && <span className="error status">не вдалося отримати текст</span>}
         </div>
-        {item.snippet && <p className="snippet">{item.snippet}</p>}
+        {item.summary
+          ? <p className="snippet summary" title="Короткий опис від AI">{item.summary}</p>
+          : item.snippet && <p className="snippet">{item.snippet}</p>}
+        {item.key_topics?.length > 0 && (
+          <div className="tags">{item.key_topics.map((k) => <span key={k} className="tag">{k}</span>)}</div>
+        )}
       </div>
       <div className="actions">
         <button className="ghost icon" onClick={() => onEdit(item)} title="Змінити тему" aria-label="Змінити тему">
