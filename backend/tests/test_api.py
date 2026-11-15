@@ -85,3 +85,17 @@ def test_firebase_verifier_requires_project():
         FirebaseAuthVerifier("")
     with pytest.raises(InvalidToken):
         FirebaseAuthVerifier("demo-project").verify("not-a-jwt")
+
+
+def test_recent_limit_profile_and_stats():
+    u = h("stats@ucu.edu.ua")
+    ids = [client.post("/api/items", json={"url": f"https://example.com/{n}"}, headers=u).json()["id"] for n in range(4)]
+    recent = client.get("/api/items", params={"limit": 2}, headers=u).json()
+    assert [i["id"] for i in recent] == ids[::-1][:2]
+    assert client.get("/api/items", params={"limit": 0}, headers=u).status_code == 422
+    client.get("/api/items", params={"q": "pizza"}, headers=u)
+    stats = client.get("/api/stats/me", headers=u).json()
+    assert stats == {"items": 4, "topics": 1, "searches": 1, "by_source": {"web": 4}}
+    me = client.patch("/api/me", json={"name": "  Уляна "}, headers=u).json()
+    assert me["name"] == "Уляна" and "created_at" in me
+    assert client.patch("/api/me", json={"name": ""}, headers=u).status_code == 422

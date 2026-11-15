@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from datetime import datetime
+
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ...db import get_db
@@ -32,12 +34,24 @@ class UserOut(BaseModel):
     id: int
     email: str
     name: str
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(current_user)):
+    return user
+
+
+class ProfileUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+
+@router.patch("/me", response_model=UserOut)
+def update_me(body: ProfileUpdate, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    user.name = body.name.strip()
+    db.commit()
     return user
 
 

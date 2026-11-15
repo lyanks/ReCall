@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field, HttpUrl
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -58,7 +58,12 @@ def add_item(body: ItemCreate, request: Request, user: User = Depends(current_us
 
 
 @router.get("", response_model=list[ItemOut])
-def list_items(q: str | None = None, user: User = Depends(current_user), db: Session = Depends(get_db)):
+def list_items(
+    q: str | None = None,
+    limit: int | None = Query(None, ge=1, le=100, description="Only the N most recently added"),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
     stmt = select(Item).where(Item.owner_id == user.id)
     if q:
         # v0: keyword search. Next: semantic search (embeddings) behind a SearchIndex port.
@@ -66,7 +71,10 @@ def list_items(q: str | None = None, user: User = Depends(current_user), db: Ses
         stmt = stmt.where(or_(Item.title.ilike(like), Item.text.ilike(like), Item.topic.ilike(like)))
         log_event(db, user.id, "search")
         db.commit()
-    return [to_out(i, q) for i in db.scalars(stmt.order_by(Item.created_at.desc()))]
+    stmt = stmt.order_by(Item.created_at.desc(), Item.id.desc())
+    if limit:
+        stmt = stmt.limit(limit)
+    return [to_out(i, q) for i in db.scalars(stmt)]
 
 
 def _own(item_id: int, user: User, db: Session) -> Item:

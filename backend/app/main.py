@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import config
 from .db import SessionLocal
+from .modules.analytics import api as analytics_api
 from .modules.identity import api as identity_api
 from .modules.identity.adapters import DevAuthVerifier, FirebaseAuthVerifier
 from .modules.ingestion.adapters import DEFAULT_EXTRACTORS, KeywordTopicClassifier
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
 
     app.include_router(identity_api.router, prefix="/api")
     app.include_router(library_api.router, prefix="/api")
+    app.include_router(analytics_api.router, prefix="/api")
 
     # ---- serve the built SPA from the same container ----
     index = config.STATIC_DIR / "index.html"
