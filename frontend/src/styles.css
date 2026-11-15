@@ -273,3 +273,16 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 .auth-lang { position: absolute; top: 14px; right: 14px; }
 .segmented.lang-compact { padding: 3px; }
 .segmented.lang-compact button { height: 30px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+
+/* ---------- topic while adding + user tags ---------- */
+.topic-choose { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.topic-choose .choice { height: 32px; padding: 0 12px; border-radius: 999px; font-size: 13px; }
+.topic-choose .choice.active { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.topic-choose .choice.more { border-style: dashed; color: var(--muted); }
+.tag.user-tag { color: var(--fg); background: var(--accent-soft); border-color: transparent; display: inline-flex; align-items: center; gap: 4px; }
+.tag.user-tag button { border: 0; background: none; padding: 0 0 0 2px; height: auto; min-height: 0; font-size: 14px; line-height: 1; color: var(--muted); cursor: pointer; }
+.needs-tags { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px; font-size: 12px; border-radius: 999px;
+  background: var(--mark); color: #1a1a1a; border: 0; font-weight: 600; }
+.tag-editor { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; border: 1px solid var(--border); border-radius: 12px; margin: 8px 0 6px; }
+.tag-editor input { flex: 1; min-width: 160px; border: 0; padding: 6px; height: auto; background: transparent; box-shadow: none; outline: none; }
+.tags-item-title { font-weight: 600; margin: 0; overflow-wrap: anywhere; }

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from ..ai.adapters import NoLLM
 from ..ai.ports import LLMClient
-from ..library.models import Item
+from ..library.models import Item, content_unknown
 from .ports import ContentExtractor, TopicClassifier
 
 log = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class IngestionService:
 
     def _digest(self, db: Session, item: Item, may_set_topic: bool) -> None:
         """AI summary + key topics. Optional: on any error the item stays as it is (ready, no summary)."""
-        if not self.llm.enabled:
+        if not self.llm.enabled or content_unknown(item):  # nothing to summarise: the user adds key phrases
             return
         try:
             topics = db.scalars(select(Item.topic).where(Item.owner_id == item.owner_id).distinct()).all()

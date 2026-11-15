@@ -27,7 +27,7 @@ class SemanticSearch:
         if not self.llm.enabled or not docs:
             return keyword_hits
         newest = sorted(docs, key=lambda d: d.id, reverse=True)[:MAX_CARDS]
-        cards = [Card(d.id, d.title, d.topic, d.summary or d.text[:300], d.keywords) for d in newest]
+        cards = [Card(d.id, d.title, d.topic, d.summary or d.text[:300], f"{d.tags} {d.keywords}".strip()) for d in newest]
         try:
             ids = self.llm.pick_relevant(query, cards)
         except Exception:

@@ -11,6 +11,7 @@ class SearchDoc:
     text: str
     summary: str = ""  # AI summary, if any
     keywords: str = ""  # AI keywords in both languages, if any
+    tags: str = ""  # the user's own key phrases
 
 
 @dataclass

@@ -121,3 +121,42 @@ def test_search_ranks_partial_sentence():
     client.post("/api/items", json={"url": "https://example.com/x"}, headers=u)
     found = client.get("/api/items", params={"q": "that video about pizza and sorting"}, headers=u).json()
     assert len(found) == 1 and "pizza" in found[0]["snippet"]
+
+
+class SocialExtractor:
+    """Pretends to be TikTok: empty caption for /empty, a real caption otherwise."""
+    source_type = "tiktok"
+
+    def supports(self, url):
+        return "tiktok" in url
+
+    def extract(self, url):
+        if "empty" in url:
+            return Extracted("TikTok від cs.girl", "cs.girl tiktok")
+        return Extracted("Big-O in 60 seconds with pizza", "Big-O in 60 seconds with pizza #cs #algorithms cs.girl tiktok")
+
+
+def test_topic_chosen_while_adding_is_kept(monkeypatch):
+    u = h("addtopic@ucu.edu.ua")
+    item = client.post("/api/items", json={"url": "https://example.com/t", "topic": "Exam prep"}, headers=u).json()
+    got = client.get(f"/api/items/{item['id']}", headers=u).json()
+    assert got["status"] == "ready" and got["topic"] == "Exam prep"   # classifier would say Algorithms
+    auto = client.post("/api/items", json={"url": "https://example.com/u", "topic": ""}, headers=u).json()
+    assert client.get(f"/api/items/{auto['id']}", headers=u).json()["topic"] == "Algorithms"
+
+
+def test_social_without_content_asks_for_tags_and_tags_are_searchable(monkeypatch):
+    monkeypatch.setattr(app.state.ingestion, "extractors", [SocialExtractor(), FakeExtractor()])
+    u = h("tags@ucu.edu.ua")
+    empty = client.post("/api/items", json={"url": "https://www.tiktok.com/@x/video/empty"}, headers=u).json()
+    full = client.post("/api/items", json={"url": "https://www.tiktok.com/@x/video/1"}, headers=u).json()
+    web = client.post("/api/items", json={"url": "https://example.com/w"}, headers=u).json()
+    get = lambda i: client.get(f"/api/items/{i['id']}", headers=u).json()
+    assert get(empty)["needs_tags"] is True
+    assert get(full)["needs_tags"] is False and get(web)["needs_tags"] is False
+    r = client.patch(f"/api/items/{empty['id']}", json={"tags": [" merge sort ", "рекурсія", "Merge sort", ""]}, headers=u)
+    assert r.status_code == 422  # empty tag rejected
+    r = client.patch(f"/api/items/{empty['id']}", json={"tags": [" merge sort ", "рекурсія", "Merge sort"]}, headers=u).json()
+    assert r["tags"] == ["merge sort", "рекурсія"] and r["needs_tags"] is False and r["topic"]
+    found = client.get("/api/items", params={"q": "рекурсія"}, headers=u).json()
+    assert [i["id"] for i in found] == [empty["id"]]

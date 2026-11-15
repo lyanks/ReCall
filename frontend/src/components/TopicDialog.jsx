@@ -20,7 +20,7 @@ export function TopicDialog({ current, onConfirm, onCancel }) {
 
   return (
     <Dialog title={t("topic.title")} onClose={onCancel}>
-      <p className="muted small">{t("topic.current")} <span className="chip">{t.topic(current)}</span></p>
+      {current && <p className="muted small">{t("topic.current")} <span className="chip">{t.topic(current)}</span></p>}
       <input autoFocus placeholder={t("topic.placeholder")} value={value} maxLength={120}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter" && value.trim()) onConfirm(match ? match.name : shown.length === 1 ? shown[0].name : value.trim()); }} />
