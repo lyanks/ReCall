@@ -154,7 +154,7 @@ button.google { height: 48px; }
 .page-title { font-size: 34px; font-weight: 700; margin: 0 0 6px; overflow-wrap: anywhere; }
 .page-title .muted { font-family: var(--font); font-weight: 500; }
 .page-sub { margin: 0 0 24px; color: var(--muted); font-size: 17px; }
-@media (max-width: 600px) { .page-title { font-size: 27px; } .page-sub { font-size: 15px; } .section-head h2 { font-size: 16px; } .search button { display: none; } }
+@media (max-width: 600px) { .page-title { font-size: 27px; } .page-sub { font-size: 15px; } .section-head h2 { font-size: 16px; } }
 .row { display: flex; gap: 10px; margin-bottom: 12px; }
 h2 { font-size: 18px; margin: 28px 0 12px; }
 h2.tight { margin: 0 0 14px; font-size: 16px; }
@@ -331,3 +331,12 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
   .dropzone button { flex: 1; justify-content: center; }
 }
 @media (hover: none) { .dropzone .drop-hint-desktop { display: none; } }
+
+/* ---------- visible search button (phones too) ---------- */
+.search .search-go { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 10px;
+  background: var(--accent); color: var(--accent-fg, #fff); font-weight: 600; flex: none; }
+.search .search-go:hover { background: var(--accent-hover, var(--accent)); }
+@media (max-width: 600px) {
+  .search .search-go { width: 40px; padding: 0; justify-content: center; }
+  .search .search-go-label { display: none; }
+}
