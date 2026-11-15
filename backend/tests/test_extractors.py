@@ -47,3 +47,17 @@ def test_web_page_uses_meta_for_js_sites(monkeypatch):
     monkeypatch.setattr(adapters.httpx, "get", lambda *a, **k: Resp(text=html))
     ex = WebPageExtractor().extract("https://poki.com")
     assert ex.title == "Poki" and "mini games" in ex.text and "x()" not in ex.text
+
+
+def test_preview_images(monkeypatch):
+    html = ('<html><head><title>Big-O</title><meta property="og:image" content="/img/cover.png"></head>'
+            '<body>text</body></html>')
+    monkeypatch.setattr(adapters.httpx, "get", lambda *a, **k: Resp(text=html))
+    assert WebPageExtractor().extract("https://site.com/a/b").image == "https://site.com/img/cover.png"
+    monkeypatch.setattr(adapters.httpx, "get", lambda *a, **k: Resp(text='<meta property="og:image" content="javascript:x">'))
+    assert WebPageExtractor().extract("https://site.com/").image == ""
+    monkeypatch.setattr(adapters.httpx, "get", lambda *a, **k: Resp(json={"title": "t", "thumbnail_url": "https://p16.tiktokcdn.com/x.jpg"}))
+    assert TikTokExtractor().extract("https://www.tiktok.com/@a/video/1").image == "https://p16.tiktokcdn.com/x.jpg"
+    monkeypatch.setattr(adapters.httpx, "get", lambda *a, **k: Resp(json={"title": "t"}))
+    monkeypatch.setattr(adapters.YouTubeExtractor, "transcript", lambda self, url: "")
+    assert adapters.YouTubeExtractor().extract("https://youtu.be/abc123").image == "https://i.ytimg.com/vi/abc123/hqdefault.jpg"

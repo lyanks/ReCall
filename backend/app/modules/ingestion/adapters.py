@@ -1,6 +1,6 @@
 import logging
 import re
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -28,7 +28,9 @@ class YouTubeExtractor:
         title = data.get("title", url)
         head = f"{title} {data.get('author_name', '')}".strip()
         subtitles = self.transcript(url)
-        return Extracted(title, f"{head} {subtitles}".strip()[:MAX_TEXT])
+        vid = self.video_id(url)
+        image = f"https://i.ytimg.com/vi/{vid}/hqdefault.jpg" if vid else data.get("thumbnail_url", "")
+        return Extracted(title, f"{head} {subtitles}".strip()[:MAX_TEXT], _img(image))
 
     @staticmethod
     def video_id(url: str) -> str | None:
@@ -85,6 +87,16 @@ def _meta(soup: BeautifulSoup, *names: str) -> str:
     return ""
 
 
+def _img(src: str, base: str = "") -> str:
+    """A usable absolute http(s) image URL, or ""."""
+    src = urljoin(base, (src or "").strip()) if base else (src or "").strip()
+    return src[:1000] if urlparse(src).scheme in {"http", "https"} else ""
+
+
+def _og_image(soup: BeautifulSoup, base: str) -> str:
+    return _img(_meta(soup, "og:image", "og:image:url", "og:image:secure_url", "twitter:image", "twitter:image:src"), base)
+
+
 class TikTokExtractor:
     """TikTok public oEmbed: caption (title) + author. No API key needed."""
 
@@ -102,7 +114,7 @@ class TikTokExtractor:
         caption = (data.get("title") or "").strip()
         author = data.get("author_name") or data.get("author_unique_id") or ""
         title = caption[:120] or f"TikTok від {author}".strip()
-        return Extracted(title, f"{caption} {author} tiktok".strip())
+        return Extracted(title, f"{caption} {author} tiktok".strip(), _img(data.get("thumbnail_url", "")))
 
 
 class InstagramExtractor:
@@ -128,7 +140,7 @@ class InstagramExtractor:
         desc = _meta(soup, "og:description", "description")
         if not (title or desc):
             return fallback
-        return Extracted((title or fallback.title)[:160], f"{title} {desc} instagram".strip())
+        return Extracted((title or fallback.title)[:160], f"{title} {desc} instagram".strip(), _og_image(soup, str(getattr(r, "url", url))))
 
 
 class WebPageExtractor:
@@ -141,6 +153,7 @@ class WebPageExtractor:
         r = httpx.get(url, headers=UA, timeout=10, follow_redirects=True)
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
+        image = _og_image(soup, str(getattr(r, "url", url)))
         for tag in soup(["script", "style", "nav", "footer", "header", "noscript"]):
             tag.decompose()
         title = (soup.title.string or "").strip() if soup.title and soup.title.string else ""
@@ -153,7 +166,7 @@ class WebPageExtractor:
         for tag in soup(["script", "style", "nav", "footer", "header", "noscript"]):
             tag.decompose()
         body = re.sub(r"\s+", " ", soup.get_text(" ")).strip()
-        return Extracted(title, f"{head} {body}".strip()[:MAX_TEXT])
+        return Extracted(title, f"{head} {body}".strip()[:MAX_TEXT], image)
 
 
 DEFAULT_EXTRACTORS = [YouTubeExtractor(), TikTokExtractor(), InstagramExtractor(), PdfLinkExtractor(), WebPageExtractor()]

@@ -160,3 +160,17 @@ def test_social_without_content_asks_for_tags_and_tags_are_searchable(monkeypatc
     assert r["tags"] == ["merge sort", "рекурсія"] and r["needs_tags"] is False and r["topic"]
     found = client.get("/api/items", params={"q": "рекурсія"}, headers=u).json()
     assert [i["id"] for i in found] == [empty["id"]]
+
+
+def test_rename_is_kept_on_refresh_and_empty_title_restores_it(monkeypatch):
+    monkeypatch.setattr(app.state.ingestion, "extractors", [FakeExtractor()])
+    u = h("rename@ucu.edu.ua")
+    item = client.post("/api/items", json={"url": "https://example.com/r"}, headers=u).json()
+    original = client.get(f"/api/items/{item['id']}", headers=u).json()["title"]
+    r = client.patch(f"/api/items/{item['id']}", json={"title": "  Мій   конспект  "}, headers=u).json()
+    assert r["title"] == "Мій конспект"
+    client.post(f"/api/items/{item['id']}/refresh", headers=u)
+    assert client.get(f"/api/items/{item['id']}", headers=u).json()["title"] == "Мій конспект"
+    assert [i["id"] for i in client.get("/api/items", params={"q": "конспект"}, headers=u).json()] == [item["id"]]
+    client.patch(f"/api/items/{item['id']}", json={"title": ""}, headers=u)
+    assert client.get(f"/api/items/{item['id']}", headers=u).json()["title"] == original

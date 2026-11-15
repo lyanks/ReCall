@@ -6,6 +6,7 @@ from typing import Protocol
 class Extracted:
     title: str
     text: str
+    image: str = ""  # preview picture (thumbnail / og:image), "" if none
 
 
 class ContentExtractor(Protocol):

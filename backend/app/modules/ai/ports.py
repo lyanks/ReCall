@@ -14,6 +14,7 @@ class Digest:
     key_topics: list[str] = field(default_factory=list)  # 3-5 short tags shown on the card
     keywords: list[str] = field(default_factory=list)  # synonyms in both languages, used by search
     topic: str = ""  # suggested topic (course/subject), "" if unsure
+    key_topics_en: list[str] = field(default_factory=list)  # the same key topics in English
 
 
 @dataclass

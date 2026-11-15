@@ -3,28 +3,41 @@ import { api } from "../api.js";
 import { useT } from "../i18n.jsx";
 import { ConfirmDialog } from "./Dialog.jsx";
 import { Icon, SourceIcon } from "./Icons.jsx";
-import { TagsDialog } from "./TagsDialog.jsx";
+import { EditItemDialog } from "./EditItemDialog.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
+
+/** Preview picture (YouTube thumbnail, page og:image); the source icon when there is none or it fails to load. */
+function Thumb({ item }) {
+  const [broken, setBroken] = useState(false);
+  if (!item.image_url || broken) return <SourceIcon type={item.source_type} />;
+  return (
+    <a className="thumb" href={item.url} target="_blank" rel="noreferrer" tabIndex={-1} aria-hidden="true">
+      <img src={item.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} />
+      <SourceIcon type={item.source_type} size={12} />
+    </a>
+  );
+}
 
 function ItemCard({ item, showTopic, onEdit, onTags, onDelete }) {
   const t = useT();
+  // AI key topics: English ones in the English interface when we have them
+  const keyTopics = (t.lang === "en" && item.key_topics_en?.length ? item.key_topics_en : item.key_topics) || [];
   // AI summary in the interface language; fall back to the other language if only one exists
   const summary = t.lang === "en" ? item.summary_en || item.summary : item.summary || item.summary_en;
   return (
     <article className="card item">
-      <SourceIcon type={item.source_type} />
+      <Thumb item={item} />
       <div className="item-body">
         <a className="item-title" href={item.url} target="_blank" rel="noreferrer">{item.title || item.url}</a>
         <div className="meta">
           {showTopic && <span className="chip">{t.topic(item.topic)}</span>}
           <span>{t.source(item.source_type)}{item.created_at && ` · ${t.ago(item.created_at)}`}</span>
           {item.status === "processing" && <span className="status processing">{t("item.processing")}</span>}
-          {item.status === "failed" && <span className="error status">{t("item.failed")}</span>}
+          {item.status === "failed" && !item.tags?.length && <span className="error status">{t("item.failed")}</span>}
         </div>
         {summary
           ? <p className="snippet summary" title={t("item.aiSummary")}>{summary}</p>
           : item.snippet && <p className="snippet">{item.snippet}</p>}
-        {/* key topics are generated in Ukrainian only, so show them in the Ukrainian interface */}
         {(item.tags?.length > 0 || item.needs_tags) && (
           <div className="tags">
             {item.tags?.map((k) => <span key={k} className="tag user-tag">#{k}</span>)}
@@ -35,13 +48,13 @@ function ItemCard({ item, showTopic, onEdit, onTags, onDelete }) {
             )}
           </div>
         )}
-        {t.lang === "uk" && item.key_topics?.length > 0 && (
-          <div className="tags">{item.key_topics.map((k) => <span key={k} className="tag">{k}</span>)}</div>
+        {keyTopics.length > 0 && (
+          <div className="tags">{keyTopics.map((k) => <span key={k} className="tag">{k}</span>)}</div>
         )}
       </div>
       <div className="actions">
-        <button className="ghost icon" onClick={() => onTags(item, false)} title={t("tags.title")} aria-label={t("tags.title")}>
-          <Icon name="hash" size={18} />
+        <button className="ghost icon" onClick={() => onTags(item, false)} title={t("edit.title")} aria-label={t("edit.title")}>
+          <Icon name="pencil" size={18} />
         </button>
         <button className="ghost icon" onClick={() => onEdit(item)} title={t("item.changeTopic")} aria-label={t("item.changeTopic")}>
           <Icon name="tag" size={18} />
@@ -66,8 +79,8 @@ export function ItemList({ items, groupByTopic, onChanged, askTagsFor, onAsked }
     if (askTagsFor) { setTagging({ item: askTagsFor, prompt: true }); onAsked?.(); }
   }, [askTagsFor, onAsked]);
 
-  async function saveTags(tags) {
-    await api(`/items/${tagging.item.id}`, { method: "PATCH", body: { tags } });
+  async function saveEdit(body) {
+    await api(`/items/${tagging.item.id}`, { method: "PATCH", body });
     setTagging(null);
     onChanged();
   }
@@ -109,7 +122,7 @@ export function ItemList({ items, groupByTopic, onChanged, askTagsFor, onAsked }
         <TopicDialog current={editing.topic} onConfirm={saveTopic} onCancel={() => setEditing(null)} />
       )}
       {tagging && (
-        <TagsDialog item={tagging.item} prompt={tagging.prompt} onSave={saveTags} onCancel={() => setTagging(null)} />
+        <EditItemDialog item={tagging.item} prompt={tagging.prompt} onSave={saveEdit} onCancel={() => setTagging(null)} />
       )}
       {deleting && (
         <ConfirmDialog title={t("delete.title")} danger confirmLabel={t("delete.confirm")}
