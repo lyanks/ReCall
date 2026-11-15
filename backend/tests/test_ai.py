@@ -37,6 +37,7 @@ class FakeLLM:
         self.queries = []
 
     def digest(self, title, text, url, source_type, topics):
+        self.digested = getattr(self, "digested", 0) + 1
         if self.fail:
             raise RuntimeError("API down")
         if "Memoization" in title:
@@ -97,6 +98,19 @@ def test_backfill_digests_old_items(llm, monkeypatch):
     monkeypatch.setattr(llm, "enabled", True)
     app.state.ingestion.backfill()
     assert client.get(f"/api/items/{item['id']}", headers=h("z@ucu.edu.ua")).json()["summary"]
+
+
+def test_no_ai_tokens_on_tiktok_we_could_not_read(llm, monkeypatch):
+    class Tiktok:
+        source_type = "tiktok"
+        def supports(self, url): return True
+        def extract(self, url): return Extracted("TikTok від @someone", "TikTok відео від @someone")
+    monkeypatch.setattr(app.state.ingestion, "extractors", [Tiktok()])
+    item = client.post("/api/items", json={"url": "https://www.tiktok.com/@someone/video/7"}, headers=h("t@ucu.edu.ua")).json()
+    got = client.get(f"/api/items/{item['id']}", headers=h("t@ucu.edu.ua")).json()
+    assert getattr(llm, "digested", 0) == 0 and got["summary"] == "" and got["needs_tags"] is True
+    app.state.ingestion.backfill()  # nor later, at start-up
+    assert getattr(llm, "digested", 0) == 0
 
 
 def test_no_key_means_no_ai():

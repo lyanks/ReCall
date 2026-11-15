@@ -23,5 +23,23 @@ class Item(Base):
     summary_en: Mapped[str] = mapped_column(Text, default="", server_default="")
     key_topics: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
     keywords: Mapped[str] = mapped_column(Text, default="", server_default="")
+    # the user's own key phrases (e.g. for a TikTok whose content we could not read)
+    tags: Mapped[list] = mapped_column(JSON, default=list, server_default="[]")
     status: Mapped[str] = mapped_column(String(20), default="processing")  # processing | ready | failed
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+SOCIAL = {"tiktok", "instagram"}
+# words our social extractors add themselves; they say nothing about the content
+_FILLER = {"tiktok", "instagram", "reel", "допис", "відео", "від", "post", "video"}
+
+
+def content_unknown(item: "Item") -> bool:
+    """A TikTok/Instagram post that gave us little more than its author's name.
+
+    Nothing to summarise, so we skip the AI call (saves tokens) and ask the user for key phrases instead.
+    """
+    if item.source_type not in SOCIAL:
+        return False
+    words = [w for w in (item.text or "").lower().replace("#", " ").split() if w not in _FILLER and len(w) > 2]
+    return len(words) < 4
