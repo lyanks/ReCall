@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { SourceIcon } from "../components/Icons.jsx";
 import { SOURCE_NAME as SOURCE } from "../sources.js";
 
 // Ukrainian plural: 1 матеріал, 2 матеріали, 5 матеріалів
@@ -38,7 +39,7 @@ export function Profile({ user }) {
         <div className="card">
           <h2 className="tight">За джерелом</h2>
           {Object.entries(stats.by_source).map(([k, v]) => (
-            <div className="kv" key={k}><span>{SOURCE[k] || k}</span><b>{v}</b></div>
+            <div className="kv" key={k}><span><SourceIcon type={k} size={16} />{SOURCE[k] || k}</span><b>{v}</b></div>
           ))}
         </div>
       )}

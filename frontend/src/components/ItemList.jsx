@@ -1,26 +1,33 @@
 import { useState } from "react";
 import { api } from "../api.js";
-import { SOURCE_ICON as ICON } from "../sources.js";
+import { SOURCE_LABEL, timeAgo, topicLabel } from "../sources.js";
 import { ConfirmDialog } from "./Dialog.jsx";
+import { Icon, SourceIcon } from "./Icons.jsx";
 import { TopicDialog } from "./TopicDialog.jsx";
 
 function ItemCard({ item, showTopic, onEdit, onDelete }) {
   return (
-    <div className="card item">
+    <article className="card item">
+      <SourceIcon type={item.source_type} />
       <div className="item-body">
-        <a href={item.url} target="_blank" rel="noreferrer">{ICON[item.source_type] || "🌐"} {item.title}</a>
+        <a className="item-title" href={item.url} target="_blank" rel="noreferrer">{item.title || item.url}</a>
         <div className="meta">
-          {showTopic && <span className="chip">{item.topic}</span>}
-          {item.status === "processing" && <span className="muted">обробляю…</span>}
-          {item.status === "failed" && <span className="error">не вдалося отримати текст</span>}
+          {showTopic && <span className="chip">{topicLabel(item.topic)}</span>}
+          <span>{SOURCE_LABEL[item.source_type] || "Посилання"}{item.created_at && ` · ${timeAgo(item.created_at)}`}</span>
+          {item.status === "processing" && <span className="status processing">обробляю…</span>}
+          {item.status === "failed" && <span className="error status">не вдалося отримати текст</span>}
         </div>
-        {item.snippet && <p className="muted snippet">{item.snippet}</p>}
+        {item.snippet && <p className="snippet">{item.snippet}</p>}
       </div>
       <div className="actions">
-        <button onClick={() => onEdit(item)} title="Змінити тему">Тема</button>
-        <button className="icon-danger" onClick={() => onDelete(item)} title="Видалити" aria-label="Видалити">🗑</button>
+        <button className="ghost icon" onClick={() => onEdit(item)} title="Змінити тему" aria-label="Змінити тему">
+          <Icon name="tag" size={18} />
+        </button>
+        <button className="ghost icon icon-danger" onClick={() => onDelete(item)} title="Видалити" aria-label="Видалити">
+          <Icon name="trash" size={18} />
+        </button>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -50,12 +57,12 @@ export function ItemList({ items, groupByTopic, onChanged }) {
     const groups = items.reduce((acc, i) => ((acc[i.topic] ||= []).push(i), acc), {});
     body = Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([topic, list]) => (
       <section key={topic}>
-        <h2>{topic} <span className="muted">({list.length})</span></h2>
-        {list.map(card)}
+        <h2>{topicLabel(topic)} <span className="muted">({list.length})</span></h2>
+        <div className="item-list">{list.map(card)}</div>
       </section>
     ));
   } else {
-    body = items.map(card);
+    body = <div className="item-list">{items.map(card)}</div>;
   }
 
   return (

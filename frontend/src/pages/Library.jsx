@@ -3,27 +3,32 @@ import { api } from "../api.js";
 import { ItemList } from "../components/ItemList.jsx";
 import { SearchBar } from "../components/SearchBar.jsx";
 import { go } from "../router.js";
-import { SOURCE_ICON } from "../sources.js";
+import { Icon, SourceIcon } from "../components/Icons.jsx";
+import { SOURCE_NAME, timeAgo, topicLabel } from "../sources.js";
 import { useItems } from "../useItems.js";
 import { SearchResults } from "./Home.jsx";
 
-const fmtDate = (d) => new Date(d).toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
 const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? "матеріал"
   : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "матеріали" : "матеріалів");
 
 function TopicGrid({ topics }) {
   return (
     <div className="topic-grid">
-      {topics.map((t) => (
-        <a key={t.name} className="card topic-tile" href={`#/library/${encodeURIComponent(t.name)}`}
+      {[...topics.filter((t) => t.name !== "Unsorted"), ...topics.filter((t) => t.name === "Unsorted")].map((t) => (
+        <a key={t.name} className={`card topic-tile${t.name === "Unsorted" ? " unsorted" : ""}`} href={`#/library/${encodeURIComponent(t.name)}`}
           onClick={(e) => { e.preventDefault(); go(`/library/${encodeURIComponent(t.name)}`); }}>
-          <span className="topic-name">{t.name}</span>
+          <span className="topic-head">
+            <span className="topic-name">{topicLabel(t.name)}</span>
+            <span className="topic-num" aria-hidden="true">{t.count}</span>
+          </span>
           <span className="topic-count">{t.count} {plural(t.count)}</span>
           <span className="topic-foot">
-            <span className="src-badges" aria-label="Джерела">
-              {Object.keys(t.sources).map((s) => <span key={s} className="src-badge" title={s}>{SOURCE_ICON[s] || "🌐"}</span>)}
+            <span className="src-badges" aria-label={`Джерела: ${Object.keys(t.sources).map((s) => SOURCE_NAME[s] || s).join(", ")}`}>
+              {Object.keys(t.sources).map((s) => (
+                <SourceIcon key={s} type={s} size={14} className="src-badge" />
+              ))}
             </span>
-            <span className="muted small">{fmtDate(t.latest)}</span>
+            <span className="muted small">{timeAgo(t.latest)}</span>
           </span>
         </a>
       ))}
@@ -38,9 +43,9 @@ function TopicView({ topic }) {
   return (
     <>
       <div className="results-head">
-        <button className="back" onClick={() => go("/library")}>← Усі теми</button>
+        <button className="back" onClick={() => go("/library")}><Icon name="back" size={16} />Усі теми</button>
       </div>
-      <h1 className="page-title">{topic} {items && <span className="muted">({items.length})</span>}</h1>
+      <h1 className="page-title">{topicLabel(topic)} {items && <span className="muted">({items.length})</span>}</h1>
       {error && <p className="error">{error}</p>}
       {items && <ItemList items={items} onChanged={reload} />}
     </>
@@ -59,7 +64,8 @@ export function Library({ topic }) {
 
   return (
     <>
-      <h1 className="page-title">Моя бібліотека {topics && <span className="muted">({total})</span>}</h1>
+      <h1 className="page-title">Моя бібліотека</h1>
+      <p className="page-sub">{topics ? `${total} ${plural(total)} у ${topics.length} ${topics.length === 1 ? "темі" : "темах"}` : "\u00a0"}</p>
       <SearchBar key={q ? "s" : "l"} onSearch={setQ} placeholder="Шукати в бібліотеці" />
       {q ? (
         <SearchResults q={q} onBack={() => { setQ(""); loadTopics(); }} backLabel="До бібліотеки" />

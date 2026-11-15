@@ -32,12 +32,16 @@ function AuthForm() {
   }
 
   return (
+    <div className="auth-wrap">
     <div className="card auth">
-      <h1>{APP_NAME}</h1>
-      <p className="muted">Зберігай один раз. Знаходь за змістом, а не за тим, куди зберіг.</p>
+      <h1 className="brand"><span className="mark">Re</span>{APP_NAME.slice(2)}</h1>
+      <p className="auth-tagline">Зберігай один раз. Знаходь за змістом, а не за тим, куди зберіг.</p>
       {DEV_MODE && <p className="dev">Dev mode: Firebase не налаштовано, вхід лише за email.</p>}
       {!DEV_MODE && (
-        <button className="google" disabled={busy} onClick={() => run(signInGoogle)}>Увійти через Google</button>
+        <>
+          <button className="google" disabled={busy} onClick={() => run(signInGoogle)}>Увійти через Google</button>
+          <div className="divider">або email</div>
+        </>
       )}
       <div className="tabs">
         <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Увійти</button>
@@ -53,6 +57,7 @@ function AuthForm() {
         {error && <p className="error">{error}</p>}
         <button className="primary" disabled={busy}>{mode === "signup" ? "Створити акаунт" : "Увійти"}</button>
       </form>
+    </div>
     </div>
   );
 }
