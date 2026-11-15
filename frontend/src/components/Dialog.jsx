@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useT } from "../i18n.jsx";
 
 /** Modal dialog. Esc or a click outside = cancel. */
 export function Dialog({ title, children, onClose }) {
@@ -18,6 +19,7 @@ export function Dialog({ title, children, onClose }) {
 }
 
 export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCancel }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const cancelRef = useRef(null);
   useEffect(() => cancelRef.current?.focus(), []);
@@ -25,10 +27,10 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm,
     <Dialog title={title} onClose={onCancel}>
       <p>{message}</p>
       <div className="dialog-actions">
-        <button ref={cancelRef} onClick={onCancel} disabled={busy}>Скасувати</button>
+        <button ref={cancelRef} onClick={onCancel} disabled={busy}>{t("common.cancel")}</button>
         <button className={danger ? "danger" : "primary"} disabled={busy}
           onClick={async () => { setBusy(true); try { await onConfirm(); } finally { setBusy(false); } }}>
-          {busy ? "Зачекай…" : confirmLabel}
+          {busy ? t("common.wait") : confirmLabel}
         </button>
       </div>
     </Dialog>
@@ -36,6 +38,7 @@ export function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm,
 }
 
 export function PromptDialog({ title, label, initial, confirmLabel, onConfirm, onCancel }) {
+  const t = useT();
   const [value, setValue] = useState(initial || "");
   return (
     <Dialog title={title} onClose={onCancel}>
@@ -44,7 +47,7 @@ export function PromptDialog({ title, label, initial, confirmLabel, onConfirm, o
           <input autoFocus value={value} maxLength={120} onChange={(e) => setValue(e.target.value)} />
         </label>
         <div className="dialog-actions">
-          <button type="button" onClick={onCancel}>Скасувати</button>
+          <button type="button" onClick={onCancel}>{t("common.cancel")}</button>
           <button className="primary" disabled={!value.trim()}>{confirmLabel}</button>
         </div>
       </form>

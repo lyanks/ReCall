@@ -1,45 +1,39 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { SourceIcon } from "../components/Icons.jsx";
-import { SOURCE_NAME as SOURCE } from "../sources.js";
+import { useT } from "../i18n.jsx";
 
-// Ukrainian plural: 1 матеріал, 2 матеріали, 5 матеріалів
-const plural = (n, [one, few, many]) => {
-  const d = n % 10, h = n % 100;
-  if (d === 1 && h !== 11) return one;
-  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return few;
-  return many;
-};
 
 
 export function Profile({ user }) {
+  const t = useT();
   const [stats, setStats] = useState(null);
   useEffect(() => { api("/stats/me").then(setStats).catch(() => setStats(null)); }, []);
-  const since = new Date(user.created_at).toLocaleDateString("uk-UA", { day: "numeric", month: "long", year: "numeric" });
+  const since = t.date(user.created_at, { day: "numeric", month: "long", year: "numeric" });
 
   return (
     <>
-      <h1 className="page-title">Профіль</h1>
+      <h1 className="page-title">{t("profile.title")}</h1>
       <div className="card profile">
         <div className="avatar" aria-hidden="true">{(user.name || user.email)[0]?.toUpperCase()}</div>
         <div>
-          <div className="profile-name">{user.name || "Без імені"}</div>
+          <div className="profile-name">{user.name || t("profile.noName")}</div>
           <div className="muted">{user.email}</div>
-          <div className="muted small">З нами з {since}</div>
+          <div className="muted small">{t("profile.since", { date: since })}</div>
         </div>
       </div>
       {stats && (
         <div className="stats">
-          <div className="card stat"><b>{stats.items}</b><span>{plural(stats.items, ["матеріал", "матеріали", "матеріалів"])}</span></div>
-          <div className="card stat"><b>{stats.topics}</b><span>{plural(stats.topics, ["тема", "теми", "тем"])}</span></div>
-          <div className="card stat"><b>{stats.searches}</b><span>{plural(stats.searches, ["пошук", "пошуки", "пошуків"])}</span></div>
+          <div className="card stat"><b>{stats.items}</b><span>{t.n(stats.items, "n.items").replace(/^\d+ /, "")}</span></div>
+          <div className="card stat"><b>{stats.topics}</b><span>{t.n(stats.topics, "n.topics").replace(/^\d+ /, "")}</span></div>
+          <div className="card stat"><b>{stats.searches}</b><span>{t.n(stats.searches, "n.searches").replace(/^\d+ /, "")}</span></div>
         </div>
       )}
       {stats && stats.items > 0 && (
         <div className="card">
-          <h2 className="tight">За джерелом</h2>
+          <h2 className="tight">{t("profile.bySource")}</h2>
           {Object.entries(stats.by_source).map(([k, v]) => (
-            <div className="kv" key={k}><span><SourceIcon type={k} size={16} />{SOURCE[k] || k}</span><b>{v}</b></div>
+            <div className="kv" key={k}><span><SourceIcon type={k} size={16} />{t.sources(k)}</span><b>{v}</b></div>
           ))}
         </div>
       )}

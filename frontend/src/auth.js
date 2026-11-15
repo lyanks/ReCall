@@ -15,14 +15,8 @@ const cfg = {
 export const DEV_MODE = !cfg.apiKey;
 const auth = DEV_MODE ? null : getAuth(initializeApp(cfg));
 
-const ERRORS = {
-  "auth/invalid-credential": "Невірний email або пароль",
-  "auth/email-already-in-use": "Цей email вже зареєстровано",
-  "auth/weak-password": "Пароль має містити щонайменше 6 символів",
-  "auth/invalid-email": "Некоректний email",
-  "auth/popup-closed-by-user": "Вікно входу закрито",
-};
-const nice = (e) => new Error(ERRORS[e.code] || e.message);
+// Keep Firebase's error code so the UI can show it in the user's language (see i18n.jsx).
+const nice = (e) => Object.assign(new Error(e.message), { code: e.code });
 
 let devUser = JSON.parse(localStorage.getItem("dev_user") || "null");
 const listeners = new Set();

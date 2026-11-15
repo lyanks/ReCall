@@ -15,6 +15,7 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 - Sources: web pages (incl. their meta description, so JS-heavy sites are findable), YouTube and TikTok (title/caption via oEmbed), Instagram (caption from link-preview tags, best effort), PDF links (name only for now).
 - Library as a grid of topic tiles; move an item to an existing topic or create a new one; delete with confirmation.
 - Search ranks by individual words (stems, typos, site name and URL count too; "mini games" finds "minigames.com"), with the matching passage shown. Cross-language search by meaning is the next step (embeddings behind the `SearchIndex` port).
+- Ukrainian and English interface: the user picks the language on the sign-in screen or in Settings (default follows the browser).
 - Usage events (sign-up, sign-in, add, search) for the validation metrics in the feedback report.
 
 Planned next: YouTube subtitles, PDF upload and text extraction, LLM summaries and topics (Claude API behind an `LLMClient` port), semantic search, Telegram bot.

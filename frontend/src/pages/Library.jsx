@@ -4,31 +4,29 @@ import { ItemList } from "../components/ItemList.jsx";
 import { SearchBar } from "../components/SearchBar.jsx";
 import { go } from "../router.js";
 import { Icon, SourceIcon } from "../components/Icons.jsx";
-import { SOURCE_NAME, timeAgo, topicLabel } from "../sources.js";
+import { useT } from "../i18n.jsx";
 import { useItems } from "../useItems.js";
 import { SearchResults } from "./Home.jsx";
 
-const plural = (n) => (n % 10 === 1 && n % 100 !== 11 ? "матеріал"
-  : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n % 100) ? "матеріали" : "матеріалів");
-
 function TopicGrid({ topics }) {
+  const t = useT();
   return (
     <div className="topic-grid">
-      {[...topics.filter((t) => t.name !== "Unsorted"), ...topics.filter((t) => t.name === "Unsorted")].map((t) => (
-        <a key={t.name} className={`card topic-tile${t.name === "Unsorted" ? " unsorted" : ""}`} href={`#/library/${encodeURIComponent(t.name)}`}
-          onClick={(e) => { e.preventDefault(); go(`/library/${encodeURIComponent(t.name)}`); }}>
+      {[...topics.filter((x) => x.name !== "Unsorted"), ...topics.filter((x) => x.name === "Unsorted")].map((x) => (
+        <a key={x.name} className={`card topic-tile${x.name === "Unsorted" ? " unsorted" : ""}`} href={`#/library/${encodeURIComponent(x.name)}`}
+          onClick={(e) => { e.preventDefault(); go(`/library/${encodeURIComponent(x.name)}`); }}>
           <span className="topic-head">
-            <span className="topic-name">{topicLabel(t.name)}</span>
-            <span className="topic-num" aria-hidden="true">{t.count}</span>
+            <span className="topic-name">{t.topic(x.name)}</span>
+            <span className="topic-num" aria-hidden="true">{x.count}</span>
           </span>
-          <span className="topic-count">{t.count} {plural(t.count)}</span>
+          <span className="topic-count">{t.n(x.count, "n.items")}</span>
           <span className="topic-foot">
-            <span className="src-badges" aria-label={`Джерела: ${Object.keys(t.sources).map((s) => SOURCE_NAME[s] || s).join(", ")}`}>
-              {Object.keys(t.sources).map((s) => (
+            <span className="src-badges" aria-label={`${t("library.sources")}: ${Object.keys(x.sources).map((s) => t.sources(s)).join(", ")}`}>
+              {Object.keys(x.sources).map((s) => (
                 <SourceIcon key={s} type={s} size={14} className="src-badge" />
               ))}
             </span>
-            <span className="muted small">{timeAgo(t.latest)}</span>
+            <span className="muted small">{t.ago(x.latest)}</span>
           </span>
         </a>
       ))}
@@ -37,15 +35,16 @@ function TopicGrid({ topics }) {
 }
 
 function TopicView({ topic }) {
+  const t = useT();
   const { items, error, reload } = useItems({ topic });
   // after moving the last item out of this topic, go back to the grid
   useEffect(() => { if (items && items.length === 0) go("/library"); }, [items]);
   return (
     <>
       <div className="results-head">
-        <button className="back" onClick={() => go("/library")}><Icon name="back" size={16} />Усі теми</button>
+        <button className="back" onClick={() => go("/library")}><Icon name="back" size={16} />{t("library.allTopics")}</button>
       </div>
-      <h1 className="page-title">{topicLabel(topic)} {items && <span className="muted">({items.length})</span>}</h1>
+      <h1 className="page-title">{t.topic(topic)} {items && <span className="muted">({items.length})</span>}</h1>
       {error && <p className="error">{error}</p>}
       {items && <ItemList items={items} onChanged={reload} />}
     </>
@@ -53,6 +52,7 @@ function TopicView({ topic }) {
 }
 
 export function Library({ topic }) {
+  const t = useT();
   const [q, setQ] = useState("");
   const [topics, setTopics] = useState(null);
   const [error, setError] = useState("");
@@ -64,15 +64,15 @@ export function Library({ topic }) {
 
   return (
     <>
-      <h1 className="page-title">Моя бібліотека</h1>
-      <p className="page-sub">{topics ? `${total} ${plural(total)} у ${topics.length} ${topics.length === 1 ? "темі" : "темах"}` : "\u00a0"}</p>
-      <SearchBar key={q ? "s" : "l"} onSearch={setQ} placeholder="Шукати в бібліотеці" />
+      <h1 className="page-title">{t("library.title")}</h1>
+      <p className="page-sub">{topics ? t("library.summary", { items: t.n(total, "n.items"), topics: t.n(topics.length, "n.inTopics") }) : "\u00a0"}</p>
+      <SearchBar key={q ? "s" : "l"} onSearch={setQ} placeholder={t("library.search")} />
       {q ? (
-        <SearchResults q={q} onBack={() => { setQ(""); loadTopics(); }} backLabel="До бібліотеки" />
+        <SearchResults q={q} onBack={() => { setQ(""); loadTopics(); }} backLabel={t("library.back")} />
       ) : (
         <>
           {error && <p className="error">{error}</p>}
-          {topics?.length === 0 && <p className="muted empty">Бібліотека порожня. Додай матеріал на головній.</p>}
+          {topics?.length === 0 && <p className="muted empty">{t("library.empty")}</p>}
           {topics && <TopicGrid topics={topics} />}
         </>
       )}

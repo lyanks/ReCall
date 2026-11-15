@@ -6,6 +6,7 @@ import { Home } from "./pages/Home.jsx";
 import { Library } from "./pages/Library.jsx";
 import { Profile } from "./pages/Profile.jsx";
 import { Settings } from "./pages/Settings.jsx";
+import { I18nProvider, LanguageSwitch, useT } from "./i18n.jsx";
 import { applyTheme, loadPrefs } from "./prefs.js";
 import { useRoute } from "./router.js";
 
@@ -13,6 +14,7 @@ const APP_NAME = "ReCall";
 applyTheme(loadPrefs().theme);
 
 function AuthForm() {
+  const t = useT();
   const [mode, setMode] = useState("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +25,7 @@ function AuthForm() {
   async function run(fn) {
     setError("");
     setBusy(true);
-    try { await fn(); } catch (err) { setError(err.message); } finally { setBusy(false); }
+    try { await fn(); } catch (err) { setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message); } finally { setBusy(false); }
   }
 
   function submit(e) {
@@ -34,28 +36,29 @@ function AuthForm() {
   return (
     <div className="auth-wrap">
     <div className="card auth">
+      <div className="auth-lang"><LanguageSwitch compact /></div>
       <h1 className="brand"><span className="mark">Re</span>{APP_NAME.slice(2)}</h1>
-      <p className="auth-tagline">Зберігай один раз. Знаходь за змістом, а не за тим, куди зберіг.</p>
-      {DEV_MODE && <p className="dev">Dev mode: Firebase не налаштовано, вхід лише за email.</p>}
+      <p className="auth-tagline">{t("tagline")}</p>
+      {DEV_MODE && <p className="dev">{t("auth.dev")}</p>}
       {!DEV_MODE && (
         <>
-          <button className="google" disabled={busy} onClick={() => run(signInGoogle)}>Увійти через Google</button>
-          <div className="divider">або email</div>
+          <button className="google" disabled={busy} onClick={() => run(signInGoogle)}>{t("auth.google")}</button>
+          <div className="divider">{t("auth.or")}</div>
         </>
       )}
       <div className="tabs">
-        <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Увійти</button>
-        <button className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Зареєструватися</button>
+        <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>{t("auth.signin")}</button>
+        <button className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>{t("auth.signup")}</button>
       </div>
       <form onSubmit={submit}>
-        {mode === "signup" && <input placeholder="Ім'я" value={name} onChange={(e) => setName(e.target.value)} />}
+        {mode === "signup" && <input placeholder={t("auth.name")} value={name} onChange={(e) => setName(e.target.value)} />}
         <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
         {!DEV_MODE && (
-          <input type="password" placeholder="Пароль (мін. 6 символів)" required
+          <input type="password" placeholder={t("auth.password")} required
             value={password} onChange={(e) => setPassword(e.target.value)} />
         )}
         {error && <p className="error">{error}</p>}
-        <button className="primary" disabled={busy}>{mode === "signup" ? "Створити акаунт" : "Увійти"}</button>
+        <button className="primary" disabled={busy}>{mode === "signup" ? t("auth.create") : t("auth.signin")}</button>
       </form>
     </div>
     </div>
@@ -81,6 +84,10 @@ function Shell({ user, setUser }) {
 }
 
 export default function App() {
+  return <I18nProvider><Root /></I18nProvider>;
+}
+
+function Root() {
   const [user, setUser] = useState(undefined);
 
   useEffect(() => onUser(async (u) => {
