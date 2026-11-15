@@ -14,7 +14,7 @@ class Item(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
-    source_type: Mapped[str] = mapped_column(String(20))  # web | youtube | pdf
+    source_type: Mapped[str] = mapped_column(String(20))  # web | youtube | tiktok | instagram | pdf | doc | image
     url: Mapped[str] = mapped_column(Text)
     title: Mapped[str] = mapped_column(Text, default="")
     # the user renamed it: fetching the source again keeps their title
@@ -35,6 +35,12 @@ class Item(Base):
 
 
 SOCIAL = {"tiktok", "instagram"}
+# uploaded files live at /api/files/<token>/<name>; the link works without a login header
+FILE_URL_PREFIX = "/api/files/"
+
+
+def is_upload(item: "Item") -> bool:
+    return (item.url or "").startswith(FILE_URL_PREFIX)
 # words our social extractors add themselves; they say nothing about the content
 _FILLER = {"tiktok", "instagram", "reel", "допис", "відео", "від", "post", "video"}
 

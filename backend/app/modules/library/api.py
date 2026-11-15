@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, Field, HttpUrl, StringConstraints
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from ...db import get_db
@@ -11,7 +11,7 @@ from ..analytics.service import log_event
 from ..identity.api import current_user
 from ..identity.models import User
 from ..search.ports import SearchDoc
-from .models import SOCIAL, Item, content_unknown
+from .models import SOCIAL, Item, content_unknown, is_upload
 
 router = APIRouter(prefix="/items", tags=["library"])
 
@@ -34,6 +34,8 @@ def needs_tags(item: Item) -> bool:
     """A TikTok/Instagram post whose content we could not read: ask the user for a few key phrases."""
     if item.status == "processing" or item.tags:
         return False
+    if is_upload(item):  # a scan or a photo the AI could not read (or no AI configured)
+        return item.status == "failed" or not (item.text or item.summary or item.summary_en)
     return item.status == "failed" and item.source_type in SOCIAL or content_unknown(item)
 
 
@@ -180,5 +182,9 @@ def update_item(item_id: int, body: ItemUpdate, request: Request, user: User = D
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item(item_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    db.delete(_own(item_id, user, db))
+    from ..files.models import StoredFile  # an uploaded file goes with its item (also frees the user's quota)
+
+    item = _own(item_id, user, db)
+    db.execute(delete(StoredFile).where(StoredFile.item_id == item.id))
+    db.delete(item)
     db.commit()
