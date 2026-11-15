@@ -12,8 +12,9 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 
 - Sign up / sign in with **Firebase Auth** (Google or email + password). We do not store passwords.
 - Add a link: the API saves it and answers `202` at once; a background job fetches the page, extracts the text and picks a topic. The UI shows "processing…" until it is done.
-- Library grouped by topic, rename a topic, delete an item.
-- Search over titles and extracted text, with the matching passage shown.
+- Sources: web pages (incl. their meta description, so JS-heavy sites are findable), YouTube and TikTok (title/caption via oEmbed), Instagram (caption from link-preview tags, best effort), PDF links (name only for now).
+- Library as a grid of topic tiles; move an item to an existing topic or create a new one; delete with confirmation.
+- Search ranks by individual words (stems, typos, site name and URL count too; "mini games" finds "minigames.com"), with the matching passage shown. Cross-language search by meaning is the next step (embeddings behind the `SearchIndex` port).
 - Usage events (sign-up, sign-in, add, search) for the validation metrics in the feedback report.
 
 Planned next: YouTube subtitles, PDF upload and text extraction, LLM summaries and topics (Claude API behind an `LLMClient` port), semantic search, Telegram bot.
@@ -37,7 +38,8 @@ Planned next: YouTube subtitles, PDF upload and text extraction, LLM summaries a
 |---|---|---|
 | `AuthVerifier` | `FirebaseAuthVerifier` (checks ID tokens against Google keys), `DevAuthVerifier` for local/tests | Clerk / Auth0 |
 | `TaskQueue` | `ThreadTaskQueue` (in-process), `InlineTaskQueue` for tests | Redis + RQ, or Cloud Tasks, once jobs get slow or the API gets more than one instance |
-| `ContentExtractor` | `WebPageExtractor`, `YouTubeExtractor` (title), `PdfLinkExtractor` (name only) | subtitles, PDF text via the worker + object storage |
+| `ContentExtractor` | `WebPageExtractor`, `YouTubeExtractor`, `TikTokExtractor` (oEmbed), `InstagramExtractor` (og tags), `PdfLinkExtractor` (name only) | subtitles, PDF text via the worker + object storage |
+| `SearchIndex` | `KeywordRanker` (word-by-word, stems, typo-tolerant) | embeddings via Claude/`LLMClient` for search by meaning |
 | `TopicClassifier` | `KeywordTopicClassifier` | Claude API through `LLMClient`, `FakeClient` in tests |
 
 ### Stack decisions ("start naive, add a block only with a reason")

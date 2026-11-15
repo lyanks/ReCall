@@ -13,16 +13,18 @@ from .modules.identity.adapters import DevAuthVerifier, FirebaseAuthVerifier
 from .modules.ingestion.adapters import DEFAULT_EXTRACTORS, KeywordTopicClassifier
 from .modules.ingestion.service import IngestionService
 from .modules.library import api as library_api
+from .modules.search.ranker import KeywordRanker
 from .platform.tasks import InlineTaskQueue, ThreadTaskQueue
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="ReCall API", version="0.3.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
+    app = FastAPI(title="ReCall API", version="0.4.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
     # ---- wire adapters to ports ----
     app.state.auth = (DevAuthVerifier() if config.AUTH_PROVIDER == "dev"
                       else FirebaseAuthVerifier(config.FIREBASE_PROJECT_ID))
     app.state.tasks = InlineTaskQueue() if config.TASK_QUEUE == "inline" else ThreadTaskQueue()
+    app.state.search = KeywordRanker()
     app.state.ingestion = IngestionService(DEFAULT_EXTRACTORS, KeywordTopicClassifier(), SessionLocal)
 
     if config.CORS_ORIGINS:
@@ -34,6 +36,7 @@ def create_app() -> FastAPI:
 
     app.include_router(identity_api.router, prefix="/api")
     app.include_router(library_api.router, prefix="/api")
+    app.include_router(library_api.topics_router, prefix="/api")
     app.include_router(analytics_api.router, prefix="/api")
 
     # ---- serve the built SPA from the same container ----

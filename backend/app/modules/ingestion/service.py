@@ -22,7 +22,7 @@ class IngestionService:
     def _extractor_for(self, url: str) -> ContentExtractor:
         return next(e for e in self.extractors if e.supports(url))
 
-    def process(self, item_id: int) -> None:
+    def process(self, item_id: int, keep_topic: bool = False) -> None:
         db: Session = self.session_factory()
         try:
             item = db.get(Item, item_id)
@@ -31,7 +31,8 @@ class IngestionService:
             try:
                 ex = self._extractor_for(item.url).extract(item.url)
                 item.title, item.text = ex.title or item.url, ex.text
-                item.topic = self.classifier.classify(ex.title, ex.text)
+                if not keep_topic:
+                    item.topic = self.classifier.classify(ex.title, ex.text)
                 item.status = "ready"
             except Exception:
                 log.exception("ingestion failed for item %s", item_id)

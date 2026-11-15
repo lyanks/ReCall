@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
+import { SOURCE_NAME as SOURCE } from "../sources.js";
 
 // Ukrainian plural: 1 матеріал, 2 матеріали, 5 матеріалів
 const plural = (n, [one, few, many]) => {
@@ -9,7 +10,6 @@ const plural = (n, [one, few, many]) => {
   return many;
 };
 
-const SOURCE = { web: "Статті", youtube: "Відео YouTube", pdf: "PDF" };
 
 export function Profile({ user }) {
   const [stats, setStats] = useState(null);

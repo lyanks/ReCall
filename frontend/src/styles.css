@@ -100,3 +100,17 @@ h2.tight { margin: 0 0 10px; }
 .settings-block .row { margin-bottom: 0; }
 .segmented { display: flex; gap: 6px; flex-wrap: wrap; }
 .segmented .active { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+/* ---- features thread: topic grid + topic picker (keep class names; restyle freely) ---- */
+.topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 12px; }
+.topic-tile { display: flex; flex-direction: column; gap: 6px; min-height: 120px; text-decoration: none; color: var(--fg);
+  transition: border-color .15s, transform .15s; }
+.topic-tile:hover { border-color: var(--accent); transform: translateY(-1px); }
+.topic-name { font-weight: 700; font-size: 16px; color: var(--accent); overflow-wrap: anywhere; }
+.topic-count { color: var(--muted); font-size: 14px; }
+.topic-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
+.src-badges { display: flex; gap: 4px; }
+.src-badge { width: 24px; height: 24px; border-radius: 6px; background: var(--chip); display: grid; place-items: center; font-size: 12px; }
+.topic-picker { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 16px; max-height: 220px; overflow-y: auto; }
+.topic-option { border-radius: 999px; padding: 6px 12px; }
+.topic-option .muted { margin-left: 4px; font-size: 12px; }

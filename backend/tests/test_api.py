@@ -99,3 +99,25 @@ def test_recent_limit_profile_and_stats():
     me = client.patch("/api/me", json={"name": "  Уляна "}, headers=u).json()
     assert me["name"] == "Уляна" and "created_at" in me
     assert client.patch("/api/me", json={"name": ""}, headers=u).status_code == 422
+
+
+def test_topics_and_topic_filter_and_refresh_keeps_topic():
+    u = h("topics@ucu.edu.ua")
+    a = client.post("/api/items", json={"url": "https://example.com/a"}, headers=u).json()
+    client.post("/api/items", json={"url": "https://example.com/b"}, headers=u)
+    client.patch(f"/api/items/{a['id']}", json={"topic": "Exam prep"}, headers=u)
+    topics = client.get("/api/topics", headers=u).json()
+    assert [(t["name"], t["count"]) for t in topics] == [("Algorithms", 1), ("Exam prep", 1)]
+    only = client.get("/api/items", params={"topic": "Exam prep"}, headers=u).json()
+    assert [i["id"] for i in only] == [a["id"]]
+    r = client.post(f"/api/items/{a['id']}/refresh", headers=u)
+    assert r.status_code == 202
+    again = client.get(f"/api/items/{a['id']}", headers=u).json()
+    assert again["status"] == "ready" and again["topic"] == "Exam prep"
+
+
+def test_search_ranks_partial_sentence():
+    u = h("search@ucu.edu.ua")
+    client.post("/api/items", json={"url": "https://example.com/x"}, headers=u)
+    found = client.get("/api/items", params={"q": "that video about pizza and sorting"}, headers=u).json()
+    assert len(found) == 1 and "pizza" in found[0]["snippet"]

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "./api.js";
 
 /** Loads items (optionally a search or the N most recent) and refreshes while any are processing. */
-export function useItems({ q = "", limit } = {}) {
+export function useItems({ q = "", limit, topic } = {}) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
 
@@ -10,13 +10,14 @@ export function useItems({ q = "", limit } = {}) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (limit) params.set("limit", limit);
+    if (topic) params.set("topic", topic);
     try {
       setItems(await api(`/items${params.size ? `?${params}` : ""}`));
       setError("");
     } catch (err) {
       setError(err.message);
     }
-  }, [q, limit]);
+  }, [q, limit, topic]);
 
   useEffect(() => { setItems(null); load(); }, [load]);
 

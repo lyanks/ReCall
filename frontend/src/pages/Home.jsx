@@ -29,7 +29,7 @@ function AddLink({ onAdded }) {
   return (
     <>
       <form className="row" onSubmit={add}>
-        <input type="url" required placeholder="Встав посилання: YouTube, стаття, PDF…" value={url}
+        <input type="url" required placeholder="Встав посилання: YouTube, TikTok, Instagram, стаття, PDF…" value={url}
           onChange={(e) => setUrl(e.target.value)} />
         <button className="primary" disabled={busy}>{busy ? "Додаю…" : "Додати"}</button>
       </form>

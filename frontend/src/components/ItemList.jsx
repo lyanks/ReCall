@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { api } from "../api.js";
-import { ConfirmDialog, PromptDialog } from "./Dialog.jsx";
-
-const ICON = { youtube: "▶", pdf: "📄", web: "🌐" };
+import { SOURCE_ICON as ICON } from "../sources.js";
+import { ConfirmDialog } from "./Dialog.jsx";
+import { TopicDialog } from "./TopicDialog.jsx";
 
 function ItemCard({ item, showTopic, onEdit, onDelete }) {
   return (
     <div className="card item">
       <div className="item-body">
-        <a href={item.url} target="_blank" rel="noreferrer">{ICON[item.source_type]} {item.title}</a>
+        <a href={item.url} target="_blank" rel="noreferrer">{ICON[item.source_type] || "🌐"} {item.title}</a>
         <div className="meta">
           {showTopic && <span className="chip">{item.topic}</span>}
           {item.status === "processing" && <span className="muted">обробляю…</span>}
@@ -62,8 +62,7 @@ export function ItemList({ items, groupByTopic, onChanged }) {
     <>
       {body}
       {editing && (
-        <PromptDialog title="Змінити тему" label="Тема" initial={editing.topic} confirmLabel="Зберегти"
-          onConfirm={saveTopic} onCancel={() => setEditing(null)} />
+        <TopicDialog current={editing.topic} onConfirm={saveTopic} onCancel={() => setEditing(null)} />
       )}
       {deleting && (
         <ConfirmDialog title="Видалити матеріал?" danger confirmLabel="Так, видалити"

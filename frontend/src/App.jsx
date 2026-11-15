@@ -61,13 +61,14 @@ function Shell({ user, setUser }) {
   const route = useRoute();
   let page;
   if (route === "/library") page = <Library />;
+  else if (route.startsWith("/library/")) page = <Library key={route} topic={decodeURIComponent(route.slice(9))} />;
   else if (route === "/profile") page = <Profile user={user} />;
   else if (route === "/settings") page = <Settings user={user} onUserChanged={setUser} onSignOut={signOut} />;
   else page = <Home user={user} />;
 
   return (
     <>
-      <Nav appName={APP_NAME} route={route === "/" || !["/library", "/profile", "/settings"].includes(route) ? "/" : route}
+      <Nav appName={APP_NAME} route={route.startsWith("/library") ? "/library" : ["/profile", "/settings"].includes(route) ? route : "/"}
         onSignOut={signOut} />
       <main className="page">{page}</main>
     </>
