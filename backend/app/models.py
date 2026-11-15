@@ -3,3 +3,4 @@
 from .modules.analytics.models import Event  # noqa: F401
 from .modules.identity.models import User  # noqa: F401
 from .modules.library.models import Item  # noqa: F401
+from .modules.files.models import StoredFile  # noqa: F401

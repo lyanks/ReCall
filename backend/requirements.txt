@@ -9,4 +9,6 @@ httpx==0.28.1
 anthropic==2.8.0
 youtube-transcript-api==1.2.5
 beautifulsoup4==4.12.3
+pypdf==6.17.0
+python-multipart==0.0.32
 pytest==8.3.4

@@ -31,7 +31,10 @@ class Card:
 class LLMClient(Protocol):
     enabled: bool
 
-    def digest(self, title: str, text: str, url: str, source_type: str, topics: Sequence[str]) -> Digest: ...
+    def digest(self, title: str, text: str, url: str, source_type: str, topics: Sequence[str],
+               image: tuple[str, bytes] | None = None) -> Digest:
+        """image = (media type, bytes) of an uploaded picture (photo of notes, a slide); text is then empty."""
+        ...
 
     def pick_relevant(self, query: str, cards: Sequence[Card]) -> list[int]:
         """Ids of the cards that answer the query by meaning (any language), best first."""

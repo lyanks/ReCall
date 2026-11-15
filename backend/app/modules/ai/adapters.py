@@ -1,5 +1,6 @@
 """LLMClient adapters: ClaudeClient (Anthropic API) and NoLLM (no key configured)."""
 
+import base64
 import json
 import logging
 import re
@@ -27,7 +28,7 @@ class NoLLM:
 
     enabled = False
 
-    def digest(self, title, text, url, source_type, topics) -> Digest:
+    def digest(self, title, text, url, source_type, topics, image=None) -> Digest:
         raise RuntimeError("LLM is not configured")
 
     def pick_relevant(self, query, cards) -> list[int]:
@@ -60,7 +61,11 @@ only if short), no evaluation, no marketing tone.
 available, that the content is unknown, or what the material "probably" or "likely" covers.
 - If the text is too thin to say anything concrete, return an empty string for both summaries.
 
-Key topics and keywords may still be filled from the title when the summary is empty."""
+Key topics and keywords may still be filled from the title when the summary is empty.
+
+If an image is attached (a photo of notes, a slide, a diagram, a textbook page), read its visible text and \
+describe its substance the same way; put the important terms from the image into the keywords.
+If the material is marked as the first part of a longer document, summarise that part only."""
 
 PICK_SYSTEM = """You are the search engine of a student's personal library of study materials. \
 Given a query and the library (one card per material), return the ids of materials that are relevant to the \
@@ -82,7 +87,7 @@ class ClaudeClient:
         self.client = anthropic.Anthropic(api_key=api_key, max_retries=2, timeout=60.0)
         self.model = model
 
-    def _ask(self, system: str, user: str, schema: type[BaseModel], max_tokens: int, timeout: float):
+    def _ask(self, system: str, user: str | list, schema: type[BaseModel], max_tokens: int, timeout: float):
         response = self.client.with_options(timeout=timeout).messages.parse(
             model=self.model,
             max_tokens=max_tokens,
@@ -97,11 +102,17 @@ class ClaudeClient:
             raise RuntimeError(f"no structured output (stop_reason={response.stop_reason})")
         return response.parsed_output
 
-    def digest(self, title: str, text: str, url: str, source_type: str, topics: Sequence[str]) -> Digest:
-        user = (
+    def digest(self, title: str, text: str, url: str, source_type: str, topics: Sequence[str],
+               image: tuple[str, bytes] | None = None) -> Digest:
+        user: str | list = (
             f"Existing topics in the student's library: {json.dumps(list(topics), ensure_ascii=False)}\n"
             f"Source type: {source_type}\nURL: {url}\nTitle: {title}\n\n<material>\n{text}\n</material>"
         )
+        if image:
+            media_type, data = image
+            user = [{"type": "image", "source": {"type": "base64", "media_type": media_type,
+                                                 "data": base64.b64encode(data).decode()}},
+                    {"type": "text", "text": user}]
         out: _DigestOut = self._ask(DIGEST_SYSTEM, user, _DigestOut, max_tokens=4000, timeout=60.0)
         return Digest(
             summary_uk=clean_summary(out.summary_uk),

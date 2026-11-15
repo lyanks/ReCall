@@ -29,6 +29,8 @@
   --src-instagram-bg: #fbe8f4; --src-instagram: #b02a7f;
   --src-web-bg: #e7f0fc; --src-web: #1f64be;
   --src-pdf-bg: #fdf0e3; --src-pdf: #b85a06;
+  --src-doc-bg: #e6f4ec; --src-doc: #1e7a46;
+  --src-image-bg: #f0ebfd; --src-image: #6a3fc2;
 
   --font: "Onest Variable", "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Unbounded Variable", "Unbounded", var(--font);
@@ -49,6 +51,8 @@
     --src-instagram-bg: #43203a; --src-instagram: #f08bcb;
     --src-web-bg: #1f2e45; --src-web: #8bb8f5;
     --src-pdf-bg: #3b2a17; --src-pdf: #f5a65b;
+  --src-doc-bg: #1b3527; --src-doc: #7fd8a4;
+  --src-image-bg: #2e2547; --src-image: #c3a8ff;
     color-scheme: dark;
   }
 }
@@ -63,6 +67,8 @@
   --src-instagram-bg: #43203a; --src-instagram: #f08bcb;
   --src-web-bg: #1f2e45; --src-web: #8bb8f5;
   --src-pdf-bg: #3b2a17; --src-pdf: #f5a65b;
+  --src-doc-bg: #1b3527; --src-doc: #7fd8a4;
+  --src-image-bg: #2e2547; --src-image: #c3a8ff;
   color-scheme: dark;
 }
 
@@ -192,6 +198,8 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 .src-instagram { background: var(--src-instagram-bg); color: var(--src-instagram); }
 .src-web { background: var(--src-web-bg); color: var(--src-web); }
 .src-pdf { background: var(--src-pdf-bg); color: var(--src-pdf); }
+.src-doc { background: var(--src-doc-bg); color: var(--src-doc); }
+.src-image { background: var(--src-image-bg); color: var(--src-image); }
 .item-body { flex: 1; min-width: 0; display: grid; gap: 4px; padding-top: 1px; }
 .item-title { color: var(--fg); font-weight: 600; font-size: 16px; line-height: 1.35; text-decoration: none; overflow-wrap: anywhere; }
 .item-title:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
@@ -306,3 +314,20 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
   .item:has(.thumb) .item-body { flex-basis: 100%; }
   .item .actions { flex-direction: row; width: 100%; justify-content: flex-end; margin-top: -6px; }
 }
+
+/* ---------- file upload (drag and drop or pick) ---------- */
+.dropzone { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border: 1.5px dashed var(--border-strong);
+  border-radius: 14px; color: var(--muted); font-size: 14px; transition: border-color .15s, background .15s; }
+.dropzone > .drop-ic { flex: none; color: var(--accent); display: grid; place-items: center; }
+.dropzone .drop-text { flex: 1 1 220px; min-width: 0; display: grid; gap: 2px; }
+.dropzone .drop-text b { color: var(--fg); font-weight: 600; }
+.dropzone .drop-limits { font-size: 12px; }
+.dropzone button { height: 40px; border-radius: 12px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.add-panel.dragging .dropzone { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-soft-fg); }
+.add-panel.dragging { outline: 3px solid var(--accent-soft); }
+.upload-status { font-size: 13px; color: var(--muted); margin: 0; }
+@media (max-width: 600px) {
+  .dropzone .drop-hint-desktop { display: none; }
+  .dropzone button { flex: 1; justify-content: center; }
+}
+@media (hover: none) { .dropzone .drop-hint-desktop { display: none; } }

@@ -9,6 +9,8 @@ from . import config
 from .db import SessionLocal
 from .modules.ai.adapters import ClaudeClient, NoLLM
 from .modules.analytics import api as analytics_api
+from .modules.files import api as files_api
+from .modules.files.adapters import PostgresFileStore
 from .modules.identity import api as identity_api
 from .modules.identity.adapters import DevAuthVerifier, FirebaseAuthVerifier
 from .modules.ingestion.adapters import DEFAULT_EXTRACTORS, KeywordTopicClassifier
@@ -28,7 +30,8 @@ def create_app() -> FastAPI:
     app.state.tasks = InlineTaskQueue() if config.TASK_QUEUE == "inline" else ThreadTaskQueue()
     app.state.llm = ClaudeClient(config.ANTHROPIC_API_KEY, config.AI_MODEL) if config.ANTHROPIC_API_KEY else NoLLM()
     app.state.search = SemanticSearch(app.state.llm, fallback=KeywordRanker())
-    app.state.ingestion = IngestionService(DEFAULT_EXTRACTORS, KeywordTopicClassifier(), SessionLocal, app.state.llm)
+    app.state.ingestion = IngestionService(DEFAULT_EXTRACTORS, KeywordTopicClassifier(), SessionLocal, app.state.llm,
+                                           files=PostgresFileStore(SessionLocal))
     if app.state.llm.enabled:
         # summaries for items saved before the key was added
         app.state.tasks.enqueue(app.state.ingestion.backfill)
@@ -41,6 +44,7 @@ def create_app() -> FastAPI:
         return {"status": "ok", "ai": app.state.llm.enabled}
 
     app.include_router(identity_api.router, prefix="/api")
+    app.include_router(files_api.router, prefix="/api")  # before /items/{id}
     app.include_router(library_api.router, prefix="/api")
     app.include_router(library_api.topics_router, prefix="/api")
     app.include_router(analytics_api.router, prefix="/api")
