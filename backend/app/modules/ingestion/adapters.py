@@ -1,10 +1,13 @@
+import logging
 import re
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
 
 from .ports import Extracted
+
+log = logging.getLogger(__name__)
 
 MAX_TEXT = 20_000
 UA = {"User-Agent": "Mozilla/5.0 (compatible; ReCall/0.1)"}
@@ -18,12 +21,45 @@ class YouTubeExtractor:
         return urlparse(url).netloc.lower() in YOUTUBE_HOSTS
 
     def extract(self, url: str) -> Extracted:
-        # Title + channel via oEmbed (no API key). Subtitles: next step (youtube-transcript-api).
+        # Title + channel via oEmbed (no API key), then subtitles if the video has any.
         r = httpx.get("https://www.youtube.com/oembed", params={"url": url, "format": "json"}, timeout=10)
         r.raise_for_status()
         data = r.json()
         title = data.get("title", url)
-        return Extracted(title, f"{title} {data.get('author_name', '')}".strip())
+        head = f"{title} {data.get('author_name', '')}".strip()
+        subtitles = self.transcript(url)
+        return Extracted(title, f"{head} {subtitles}".strip()[:MAX_TEXT])
+
+    @staticmethod
+    def video_id(url: str) -> str | None:
+        u = urlparse(url)
+        if u.netloc.lower() == "youtu.be":
+            return u.path.strip("/").split("/")[0] or None
+        if u.path == "/watch":
+            return parse_qs(u.query).get("v", [None])[0]
+        parts = [p for p in u.path.split("/") if p]
+        if len(parts) >= 2 and parts[0] in {"shorts", "embed", "live", "v"}:
+            return parts[1]
+        return None
+
+    def transcript(self, url: str) -> str:
+        """Best effort: YouTube often blocks subtitle requests from cloud servers; then we keep title only."""
+        vid = self.video_id(url)
+        if not vid:
+            return ""
+        try:
+            from youtube_transcript_api import YouTubeTranscriptApi
+
+            api = YouTubeTranscriptApi()
+            listing = api.list(vid)
+            try:
+                tr = listing.find_transcript(["uk", "en", "ru", "pl"])
+            except Exception:
+                tr = next(iter(listing))
+            return " ".join(s.text for s in tr.fetch()).replace("\n", " ")
+        except Exception as e:  # no subtitles, blocked, network error
+            log.info("no transcript for %s: %s", vid, type(e).__name__)
+            return ""
 
 
 class PdfLinkExtractor:

@@ -14,10 +14,11 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 - Add a link: the API saves it and answers `202` at once; a background job fetches the page, extracts the text and picks a topic. The UI shows "processing…" until it is done.
 - Sources: web pages (incl. their meta description, so JS-heavy sites are findable), YouTube and TikTok (title/caption via oEmbed), Instagram (caption from link-preview tags, best effort), PDF links (name only for now).
 - Library as a grid of topic tiles; move an item to an existing topic or create a new one; delete with confirmation.
-- Search ranks by individual words (stems, typos, site name and URL count too; "mini games" finds "minigames.com"), with the matching passage shown. Cross-language search by meaning is the next step (embeddings behind the `SearchIndex` port).
+- Search ranks by individual words (stems, typos, site name and URL count too; "mini games" finds "minigames.com"), with the matching passage shown.
+- **With an Anthropic API key (optional):** every saved link gets a 2–3 sentence summary (Ukrainian + English) and key topics from Claude; YouTube uses the video's subtitles when YouTube lets us read them. Search then works **by meaning and across languages** (a Ukrainian query finds an English article). Links the keyword rules cannot file get a topic from Claude. Without the key everything above keeps working as before.
 - Usage events (sign-up, sign-in, add, search) for the validation metrics in the feedback report.
 
-Planned next: YouTube subtitles, PDF upload and text extraction, LLM summaries and topics (Claude API behind an `LLMClient` port), semantic search, Telegram bot.
+Planned next: PDF upload and text extraction, exam prep (summary or self-check questions per topic), Telegram bot.
 
 ## Architecture
 
@@ -39,8 +40,9 @@ Planned next: YouTube subtitles, PDF upload and text extraction, LLM summaries a
 | `AuthVerifier` | `FirebaseAuthVerifier` (checks ID tokens against Google keys), `DevAuthVerifier` for local/tests | Clerk / Auth0 |
 | `TaskQueue` | `ThreadTaskQueue` (in-process), `InlineTaskQueue` for tests | Redis + RQ, or Cloud Tasks, once jobs get slow or the API gets more than one instance |
 | `ContentExtractor` | `WebPageExtractor`, `YouTubeExtractor`, `TikTokExtractor` (oEmbed), `InstagramExtractor` (og tags), `PdfLinkExtractor` (name only) | subtitles, PDF text via the worker + object storage |
-| `SearchIndex` | `KeywordRanker` (word-by-word, stems, typo-tolerant) | embeddings via Claude/`LLMClient` for search by meaning |
-| `TopicClassifier` | `KeywordTopicClassifier` | Claude API through `LLMClient`, `FakeClient` in tests |
+| `SearchIndex` | `SemanticSearch` (Claude picks matches by meaning) with `KeywordRanker` as fallback | pgvector + embeddings once libraries reach thousands of items |
+| `TopicClassifier` | `KeywordTopicClassifier`, Claude fills in what the rules leave Unsorted | |
+| `LLMClient` | `ClaudeClient` (Anthropic SDK, `claude-haiku-5-5`), `NoLLM` without a key, `FakeLLM` in tests | another model or vendor |
 
 ### Stack decisions ("start naive, add a block only with a reason")
 
@@ -56,6 +58,15 @@ Planned next: YouTube subtitles, PDF upload and text extraction, LLM summaries a
 | Infrastructure | **Terraform** (Render + Neon providers) | IaC without AWS |
 | Hosting | Option B, PaaS: **Render** (container) + **Neon** (Postgres) | free tiers, nothing to administer |
 | Not yet | Redis, object storage + CDN, staging | no hot reads, no file uploads, one environment so far |
+
+## AI: why no embeddings
+
+Search by meaning usually means embeddings + a vector index. We chose a simpler design that needs one vendor and no new infrastructure:
+
+- The Anthropic API has no embeddings endpoint; a second vendor (Voyage, OpenAI) means a second key and account, and a local multilingual model does not fit the 512 MB free Render instance.
+- A student's library is small (tens to hundreds of links). For each search we send compact cards (title, topic, AI summary, keywords; ~100 tokens each, newest 200 items) to `claude-haiku-5-5` and it returns the ids that answer the query, in any language. Keyword hits the model leaves out are still shown after its picks. If the API fails or is slow, search silently falls back to keywords.
+- Cost with Haiku 5.5 ($0.10 / $0.50 per million tokens): about $0.0005 per saved link and $0.001 per search, so a semester of use is cents.
+- When libraries grow to thousands of items, a pgvector adapter can replace `SemanticSearch` behind the same `SearchIndex` port.
 
 ## Repository layout
 
@@ -103,6 +114,8 @@ New migration after changing a model: `cd backend && alembic revision --autogene
 | `AUTH_PROVIDER` | API | `firebase` (default) or `dev` (local only: sign in by email, no password) |
 | `FIREBASE_PROJECT_ID` | API | Firebase project whose ID tokens are accepted; defaults to `recall-ucu-edu` |
 | `TASK_QUEUE` | API | `thread` (default) or `inline` (tests) |
+| `ANTHROPIC_API_KEY` | API | optional; turns on AI summaries and search by meaning |
+| `AI_MODEL` | API | Claude model for both tasks; defaults to `claude-haiku-5-5` |
 
 The Firebase **web** config (`apiKey`, `authDomain`, …) is in `frontend/.env.production`. These values are public by design and end up in the JS bundle anyway; access is protected by Firebase's authorized-domains list. `npm run dev` without `.env.local` runs in dev mode.
 
@@ -116,7 +129,7 @@ Firebase project: `recall-ucu-edu` (Authentication → Email/Password and Google
 ### 2. App: Render
 1. [render.com](https://render.com) → sign in with GitHub → **New → Web Service** → pick `lyanks/ReCall`.
 2. Language **Docker**, branch `main`, region **Frankfurt**, instance type **Free**.
-3. **Environment variables:** `DATABASE_URL` = the Neon string. Nothing else is required.
+3. **Environment variables:** `DATABASE_URL` = the Neon string. Optional: `ANTHROPIC_API_KEY` (from [console.anthropic.com](https://console.anthropic.com) → API Keys) for AI summaries and search by meaning; items saved earlier get summaries in the background after the next start.
 4. **Advanced → Health Check Path:** `/api/health`. **Auto-Deploy:** off (CI deploys after tests pass).
 5. Create. The first build takes ~3–5 minutes; migrations run automatically on start.
 

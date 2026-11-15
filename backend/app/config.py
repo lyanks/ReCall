@@ -26,3 +26,7 @@ CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o
 
 # Built React app. When present, the API container also serves the frontend (one deploy).
 STATIC_DIR = Path(os.getenv("STATIC_DIR", Path(__file__).resolve().parents[2] / "frontend" / "dist"))
+
+# Claude API for summaries and search by meaning. Without a key the app works as before (keyword search).
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
+AI_MODEL = os.getenv("AI_MODEL", "claude-haiku-5-5")

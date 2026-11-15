@@ -31,13 +31,17 @@ class ItemOut(BaseModel):
     topic: str
     status: str
     snippet: str
+    summary: str = ""
+    summary_en: str = ""
+    key_topics: list[str] = []
     created_at: datetime
 
 
 def to_out(item: Item, snippet: str | None = None) -> ItemOut:
     snippet = item.text[:200] if snippet is None else snippet
     return ItemOut(id=item.id, source_type=item.source_type, url=item.url, title=item.title or item.url,
-                   topic=item.topic, status=item.status, snippet=snippet, created_at=item.created_at)
+                   topic=item.topic, status=item.status, snippet=snippet, summary=item.summary or "",
+                   summary_en=item.summary_en or "", key_topics=item.key_topics or [], created_at=item.created_at)
 
 
 @router.post("", response_model=ItemOut, status_code=status.HTTP_202_ACCEPTED)
@@ -95,7 +99,8 @@ def list_items(
         log_event(db, user.id, "search")
         db.commit()
         items = {i.id: i for i in db.scalars(stmt)}
-        docs = [SearchDoc(i.id, i.title, i.topic, i.url, i.text) for i in items.values()]
+        docs = [SearchDoc(i.id, i.title, i.topic, i.url, i.text, i.summary or "", i.keywords or "")
+                for i in items.values()]
         hits = request.app.state.search.search(q, docs)[: limit or 50]
         return [to_out(items[h.id], snippet=h.snippet) for h in hits]
     stmt = stmt.order_by(Item.created_at.desc(), Item.id.desc())

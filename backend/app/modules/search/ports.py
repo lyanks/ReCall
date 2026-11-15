@@ -9,6 +9,8 @@ class SearchDoc:
     topic: str
     url: str
     text: str
+    summary: str = ""  # AI summary, if any
+    keywords: str = ""  # AI keywords in both languages, if any
 
 
 @dataclass
@@ -20,6 +22,7 @@ class Hit:
 
 class SearchIndex(Protocol):
     """Port: ranks a user's items for a free-text query.
-    Now: KeywordRanker (word-by-word, typo-tolerant). Next: embeddings via LLMClient for search by meaning."""
+    KeywordRanker: word-by-word, typo-tolerant, no network.
+    SemanticSearch: asks the LLM which items answer the query by meaning (any language), keyword hits as a fallback."""
 
     def search(self, query: str, docs: Sequence[SearchDoc]) -> list[Hit]: ...
