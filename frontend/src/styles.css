@@ -428,7 +428,7 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 .step { display: grid; grid-template-columns: 5fr 7fr; gap: 48px; align-items: center; }
 .step:nth-child(even) { grid-template-columns: 7fr 5fr; }
 .step:nth-child(even) .step-text { order: 2; }
-.step-num { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; background: var(--mark);
+.step-num { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 16px; background: #ffe066;
   color: #1c1b22; font-family: var(--font-display); font-size: 26px; font-weight: 800; transform: rotate(-4deg); }
 .step h3 { font-size: clamp(22px, 2.6vw, 28px); font-weight: 750; margin: 18px 0 10px; letter-spacing: -0.02em; }
 .step p { margin: 0; font-size: 17px; color: var(--muted); line-height: 1.6; }
@@ -444,12 +444,14 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 .why-card p { margin: 0; color: var(--muted); }
 
 .land-end { max-width: 1032px; margin: 80px auto 0; padding: 72px 24px; text-align: center; border-radius: 28px;
-  background: var(--accent); color: var(--accent-fg); position: relative; overflow: hidden; }
+  background: #4338ca; color: #fff; position: relative; overflow: hidden; }
 .land-end::after { content: ""; position: absolute; inset: auto -10% -60% auto; width: 420px; height: 420px; border-radius: 50%;
-  background: color-mix(in srgb, var(--mark) 35%, transparent); filter: blur(60px); }
+  background: rgba(255, 224, 102, .28); filter: blur(60px); }
 .land-end h2 { position: relative; z-index: 1; font-size: clamp(28px, 4.6vw, 52px); font-weight: 800; letter-spacing: -0.03em; margin: 0 0 12px; }
 .land-end p { position: relative; z-index: 1; margin: 0 0 30px; font-size: 18px; opacity: .85; }
-.land-end .btn { position: relative; z-index: 1; background: var(--mark); border-color: var(--mark); color: #1c1b22; box-shadow: none; }
+/* the final block keeps the light-theme colours in both themes: bright highlighter on indigo */
+.land-end .btn { position: relative; z-index: 1; background: #ffe066; border-color: #ffe066; color: #1c1b22;
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .45); }
 .land-end .btn:hover { background: #fff; border-color: #fff; color: #1c1b22; }
 .land-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
   max-width: 1080px; margin: 0 auto; padding: 40px 24px; color: var(--muted); font-size: 14px; }
