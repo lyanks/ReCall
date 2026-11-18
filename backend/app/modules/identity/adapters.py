@@ -59,23 +59,10 @@ class FirebasePasswordAccounts:
             return False
         return r.status_code == 200
 
-    def send_password_reset(self, email: str) -> None:
-        try:
-            r = self._post("sendOobCode", {"requestType": "PASSWORD_RESET", "email": email})
-            if r.status_code != 200:
-                log.info("password reset not sent: %s", r.text[:200])
-        except httpx.HTTPError:
-            log.warning("Firebase sendOobCode unreachable")
-
 
 class DevPasswordAccounts:
-    """Local development and tests: every password is right, reset emails are only recorded."""
-
-    def __init__(self):
-        self.resets: list[str] = []
+    """Local development and tests: every password is right."""
 
     def check_password(self, email: str, password: str) -> bool:
         return True
 
-    def send_password_reset(self, email: str) -> None:
-        self.resets.append(email)

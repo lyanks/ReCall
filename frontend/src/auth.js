@@ -93,19 +93,7 @@ export async function signUpLogin(login, password, name) {
 }
 
 /** "Forgot password?": the server mails a reset link to the account's confirmed email, if it has one. */
-export async function requestPasswordReset(loginOrEmail) {
-  await api("/auth/reset", { method: "POST", body: { login: loginOrEmail.trim() } });
-}
-
 /** Login accounts: Firebase mails a link to `email`; the account switches to it once the link is opened. */
-export async function addEmail(email) {
-  const clean = email.trim().toLowerCase();
-  if (!DEV_MODE) {
-    try { await verifyBeforeUpdateEmail(auth.currentUser, clean); } catch (e) { throw nice(e); }
-  }
-  return api("/me", { method: "PATCH", body: { pending_email: clean } });
-}
-
 export async function signOut() {
   if (DEV_MODE) return setDevUser(null);
   await fbSignOut(auth);

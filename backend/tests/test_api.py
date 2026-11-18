@@ -209,12 +209,6 @@ def test_login_account_gets_login_and_resolves_without_leaking_email():
     finally:
         pw.check_password = orig
 
-    # password reset by login goes to the confirmed address only
-    pw.resets.clear()
-    assert client.post("/api/auth/reset", json={"login": "sofiia.d"}).status_code == 204
-    assert client.post("/api/auth/reset", json={"login": "nobody1"}).status_code == 204
-    assert client.post("/api/auth/reset", json={"login": f"x@{LOGIN_DOMAIN}"}).status_code == 204
-    assert pw.resets == ["sofiia@gmail.com"]
 
 
 def test_token_with_new_email_updates_profile_and_keeps_login():
