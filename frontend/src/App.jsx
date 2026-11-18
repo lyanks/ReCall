@@ -3,19 +3,21 @@ import { api } from "./api.js";
 import { DEV_MODE, onUser, signInEmail, signInGoogle, signOut, signUpEmail } from "./auth.js";
 import { Nav } from "./components/Nav.jsx";
 import { Home } from "./pages/Home.jsx";
+import { Landing } from "./pages/Landing.jsx";
 import { Library } from "./pages/Library.jsx";
 import { Profile } from "./pages/Profile.jsx";
 import { Settings } from "./pages/Settings.jsx";
 import { I18nProvider, LanguageSwitch, useT } from "./i18n.jsx";
 import { applyTheme, loadPrefs } from "./prefs.js";
-import { useRoute } from "./router.js";
+import { go, useRoute } from "./router.js";
 
 const APP_NAME = "ReCall";
+const AUTH_ROUTES = ["/signin", "/signup"];
 applyTheme(loadPrefs().theme);
 
-function AuthForm() {
+function AuthForm({ initialMode = "signin" }) {
   const t = useT();
-  const [mode, setMode] = useState("signin");
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -36,6 +38,7 @@ function AuthForm() {
   return (
     <div className="auth-wrap">
     <div className="card auth">
+      <a className="auth-back" href="#/">{t("auth.back")}</a>
       <div className="auth-lang"><LanguageSwitch compact /></div>
       <h1 className="brand"><span className="mark">Re</span>{APP_NAME.slice(2)}</h1>
       <p className="auth-tagline">{t("tagline")}</p>
@@ -89,6 +92,7 @@ export default function App() {
 
 function Root() {
   const [user, setUser] = useState(undefined);
+  const route = useRoute();
 
   useEffect(() => onUser(async (u) => {
     if (!u) return setUser(null);
@@ -101,7 +105,14 @@ function Root() {
     }
   }), []);
 
+  // After signing in from #/signin or #/signup, land on Home.
+  useEffect(() => { if (user && AUTH_ROUTES.includes(route)) go("/"); }, [user, route]);
+
   if (user === undefined) return null;
-  if (!user) return <AuthForm />;
+  // Signed-out visitors see the landing page; its buttons open the sign-in / sign-up form.
+  if (!user) {
+    if (AUTH_ROUTES.includes(route)) return <AuthForm key={route} initialMode={route.slice(1)} />;
+    return <Landing appName={APP_NAME} />;
+  }
   return <Shell user={user} setUser={setUser} />;
 }
