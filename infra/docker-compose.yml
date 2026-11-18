@@ -21,6 +21,7 @@ services:
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/app
       AUTH_PROVIDER: firebase
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}   # optional: AI summaries + search by meaning
     ports: ["8000:8000"]
     depends_on:
       db: { condition: service_healthy }
