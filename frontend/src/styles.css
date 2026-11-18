@@ -509,6 +509,7 @@ button.forgot-link { justify-self: center; height: 32px; font-size: 14px; color:
 .forgot { display: grid; gap: 8px; padding-top: 6px; border-top: 1px solid var(--border); }
 .forgot p { margin: 0; }
 .forgot .row { margin: 0; }
+.email-pending p { margin: 0 0 8px; }
 .email-pending { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-soft-fg); font-size: 14px; }
 
 /* ---------- support (donation) button ---------- */

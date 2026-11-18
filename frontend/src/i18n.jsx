@@ -1,6 +1,7 @@
 // UI translations. The user picks the language (Settings or the sign-in screen); the choice is saved on the device.
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { loadPrefs, savePrefs } from "./prefs.js";
+import { setAuthLanguage } from "./auth.js";
 
 export const LANGUAGES = [["uk", "Українська"], ["en", "English"]];
 const LOCALE = { uk: "uk-UA", en: "en-GB" };
@@ -29,6 +30,9 @@ const STRINGS = {
     "email.confirmed": "Підтверджено: {email}",
     "email.pending": "Лист надіслано на {email}. Відкрий посилання з нього, а потім увійди знову за логіном.",
     "email.err.format": "Схоже, в email помилка. Приклад: name@ucu.edu.ua",
+    "email.spam": "Лист приходить від noreply@recall-ucu-edu.firebaseapp.com за хвилину-дві. Немає? Перевір «Спам» і «Промоакції».",
+    "email.resend": "Надіслати ще раз",
+    "email.resent": "Надіслано ще раз",
     "auth/requires-recent-login": "З міркувань безпеки вийди й увійди знову, а потім повтори.",
     "support.label": "Підтримати · {n} грн",
     "support.title": "25 грн (~0.5$) замість оплати. Усі гроші підуть на благодійність (Monobank-банка)",
@@ -235,6 +239,9 @@ const STRINGS = {
     "email.confirmed": "Confirmed: {email}",
     "email.pending": "We sent a link to {email}. Open it, then sign in again with your login.",
     "email.err.format": "This email looks wrong. Example: name@ucu.edu.ua",
+    "email.spam": "The email comes from noreply@recall-ucu-edu.firebaseapp.com within a minute or two. Not there? Check Spam and Promotions.",
+    "email.resend": "Send again",
+    "email.resent": "Sent again",
     "auth/requires-recent-login": "For security, sign out and back in, then try again.",
     "support.label": "Support · {n} UAH",
     "support.title": "25 UAH (~$0.5) instead of a payment. All money goes to charity (Monobank jar)",
@@ -468,7 +475,7 @@ const I18n = createContext({ t: makeT("uk"), lang: "uk", setLang: () => {} });
 
 export function I18nProvider({ children }) {
   const [lang, setLangState] = useState(detectLanguage);
-  useEffect(() => { document.documentElement.lang = lang; }, [lang]);
+  useEffect(() => { document.documentElement.lang = lang; setAuthLanguage(lang); }, [lang]);
   const value = useMemo(() => ({
     lang,
     t: makeT(lang),

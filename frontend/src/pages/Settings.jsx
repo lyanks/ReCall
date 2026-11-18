@@ -85,6 +85,14 @@ function RecoveryEmail({ user, onUserChanged }) {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  async function resend() {
+    setError(""); setBusy(true);
+    try { onUserChanged(await addEmail(user.pending_email)); setSent(true); }
+    catch (err) { setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message); }
+    finally { setBusy(false); }
+  }
 
   async function submit(e) {
     e.preventDefault();
@@ -94,6 +102,7 @@ function RecoveryEmail({ user, onUserChanged }) {
     try {
       onUserChanged(await addEmail(email));
       setEmail("");
+      setSent(true);
     } catch (err) {
       setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message);
     } finally {
@@ -106,7 +115,15 @@ function RecoveryEmail({ user, onUserChanged }) {
       <h2 className="tight">{t("email.title")}</h2>
       <p className="muted small">{t("email.why")}</p>
       {confirmed && <p className="ok">{t("email.confirmed", { email: confirmed })}</p>}
-      {user.pending_email && <p className="email-pending">{t("email.pending", { email: user.pending_email })}</p>}
+      {user.pending_email && (
+        <div className="email-pending">
+          <p>{t("email.pending", { email: user.pending_email })}</p>
+          <p className="small">{t("email.spam")}</p>
+          <button type="button" className="btn small" disabled={busy} onClick={resend}>
+            {sent ? t("email.resent") : t("email.resend")}
+          </button>
+        </div>
+      )}
       <div className="row">
         <input type="email" autoComplete="email" placeholder={confirmed ? t("email.newPlaceholder") : "name@ucu.edu.ua"}
           value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />

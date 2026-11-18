@@ -16,6 +16,8 @@ const cfg = {
 
 export const DEV_MODE = !cfg.apiKey;
 const auth = DEV_MODE ? null : getAuth(initializeApp(cfg));
+// Firebase emails (confirm address, reset password) in the UI language, not English.
+export function setAuthLanguage(lang) { if (auth) auth.languageCode = lang; }
 
 // Keep Firebase's error code so the UI can show it in the user's language (see i18n.jsx).
 const nice = (e) => Object.assign(new Error(e.message), { code: e.code });
