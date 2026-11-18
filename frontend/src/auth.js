@@ -3,7 +3,6 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut as fbSignOut,
-  sendEmailVerification,
 } from "firebase/auth";
 
 const cfg = {
@@ -45,30 +44,40 @@ export async function signInGoogle() {
   try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch (e) { throw nice(e); }
 }
 
-export async function signInEmail(email, password) {
+// Password accounts use a login, not an email. Firebase Auth only knows email + password, so a login is stored as
+// "<login>@<LOGIN_DOMAIN>": an address nobody receives mail at (no password reset by email for these accounts).
+export const LOGIN_DOMAIN = "users.recall-ucu-edu.firebaseapp.com";
+const loginToEmail = (login) => {
+  const v = login.trim().toLowerCase();
+  return v.includes("@") ? v : `${v}@${LOGIN_DOMAIN}`; // "@" = an older email account (still allowed to sign in)
+};
+
+/** What to show for an account: "@login" for login accounts, the email otherwise. */
+export const displayLogin = (email = "") =>
+  email.endsWith(`@${LOGIN_DOMAIN}`) ? `@${email.slice(0, -LOGIN_DOMAIN.length - 1)}` : email;
+
+let pendingName = "";
+/** The name typed at sign-up, picked up once after the account is created (see App.jsx). */
+export function takePendingName() { const n = pendingName; pendingName = ""; return n; }
+
+export async function signInLogin(login, password) {
+  const email = loginToEmail(login);
   if (DEV_MODE) return setDevUser({ email });
   try { await signInWithEmailAndPassword(auth, email, password); } catch (e) { throw nice(e); }
 }
 
-export async function signUpEmail(email, password, name) {
+export async function signUpLogin(login, password, name) {
+  const email = loginToEmail(login);
+  pendingName = name.trim() || login.trim();
   if (DEV_MODE) return setDevUser({ email });
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
-    if (name) await updateProfile(user, { displayName: name });
-    // Proves the address is real; the account works meanwhile, the app shows a reminder until it is confirmed.
-    sendEmailVerification(user).catch(() => {});
-  } catch (e) { throw nice(e); }
-}
-
-/** Email of a password account that has not confirmed its address yet, else "" (Google accounts are verified). */
-export function unverifiedEmail() {
-  const u = auth?.currentUser;
-  if (!u || u.emailVerified || !u.providerData.some((p) => p.providerId === "password")) return "";
-  return u.email || "";
-}
-
-export async function resendVerification() {
-  if (auth?.currentUser) await sendEmailVerification(auth.currentUser);
+    await updateProfile(user, { displayName: pendingName });
+  } catch (e) {
+    pendingName = "";
+    // the address is ours, so "email taken" really means "login taken"
+    throw nice(e.code === "auth/email-already-in-use" ? Object.assign(e, { code: "auth/login-taken" }) : e);
+  }
 }
 
 export async function signOut() {

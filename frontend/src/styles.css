@@ -492,7 +492,7 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 }
 :root[data-theme="dark"] .land-hero::before { opacity: .5; }
 
-/* ---------- sign-up: password strength + email confirmation reminder ---------- */
+/* ---------- sign-up: password strength ---------- */
 .pw-meter { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 4px 10px; font-size: 13px; color: var(--muted); }
 .pw-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .pw-bars i { height: 5px; border-radius: 3px; background: var(--border-strong); }
@@ -502,6 +502,4 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 .pw-2 .pw-bars i:nth-child(-n+2) { background: #d99a06; }
 .pw-3 .pw-bars i { background: var(--ok); }
 .pw-3 span { color: var(--ok); }
-.verify-banner { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 8px 16px;
-  background: var(--accent-soft); color: var(--accent-soft-fg); font-size: 14px; text-align: center; }
-.verify-banner button { height: 32px; padding: 0 10px; font-size: 14px; color: var(--accent-soft-fg); }
+.auth-hint { margin: 0; }

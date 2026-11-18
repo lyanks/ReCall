@@ -1,3 +1,4 @@
+import { displayLogin } from "../auth.js";
 import { useState } from "react";
 import { api } from "../api.js";
 import { LanguageSwitch, useT } from "../i18n.jsx";
@@ -68,7 +69,7 @@ export function Settings({ user, onUserChanged, onSignOut }) {
 
       <div className="card settings-block">
         <h2 className="tight">{t("settings.account")}</h2>
-        <p className="muted">{user.email}</p>
+        <p className="muted">{displayLogin(user.email)}</p>
         <button onClick={onSignOut}>{t("settings.signout")}</button>
       </div>
     </>
