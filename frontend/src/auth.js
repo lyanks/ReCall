@@ -3,6 +3,7 @@ import { initializeApp } from "firebase/app";
 import {
   getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signOut as fbSignOut,
+  sendEmailVerification,
 } from "firebase/auth";
 
 const cfg = {
@@ -54,7 +55,20 @@ export async function signUpEmail(email, password, name) {
   try {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     if (name) await updateProfile(user, { displayName: name });
+    // Proves the address is real; the account works meanwhile, the app shows a reminder until it is confirmed.
+    sendEmailVerification(user).catch(() => {});
   } catch (e) { throw nice(e); }
+}
+
+/** Email of a password account that has not confirmed its address yet, else "" (Google accounts are verified). */
+export function unverifiedEmail() {
+  const u = auth?.currentUser;
+  if (!u || u.emailVerified || !u.providerData.some((p) => p.providerId === "password")) return "";
+  return u.email || "";
+}
+
+export async function resendVerification() {
+  if (auth?.currentUser) await sendEmailVerification(auth.currentUser);
 }
 
 export async function signOut() {

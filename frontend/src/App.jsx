@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api.js";
-import { DEV_MODE, onUser, signInEmail, signInGoogle, signOut, signUpEmail } from "./auth.js";
+import { DEV_MODE, onUser, resendVerification, signInEmail, signInGoogle, signOut, signUpEmail, unverifiedEmail } from "./auth.js";
 import { Nav } from "./components/Nav.jsx";
 import { Home } from "./pages/Home.jsx";
 import { Landing } from "./pages/Landing.jsx";
@@ -10,6 +10,7 @@ import { Settings } from "./pages/Settings.jsx";
 import { I18nProvider, LanguageSwitch, useT } from "./i18n.jsx";
 import { applyTheme, loadPrefs } from "./prefs.js";
 import { go, useRoute } from "./router.js";
+import { emailOk, passwordProblem, passwordStrength } from "./validate.js";
 
 const APP_NAME = "ReCall";
 const AUTH_ROUTES = ["/signin", "/signup"];
@@ -30,8 +31,16 @@ function AuthForm({ initialMode = "signin" }) {
     try { await fn(); } catch (err) { setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message); } finally { setBusy(false); }
   }
 
+  const signup = mode === "signup";
+  const strength = signup && !DEV_MODE ? passwordStrength(password, email) : 0;
+
   function submit(e) {
     e.preventDefault();
+    if (signup) {
+      if (!emailOk(email)) return setError(t("auth.err.email"));
+      const problem = DEV_MODE ? "" : passwordProblem(password, email);
+      if (problem) return setError(t(problem));
+    }
     run(() => (mode === "signup" ? signUpEmail(email, password, name) : signInEmail(email, password)));
   }
 
@@ -50,20 +59,48 @@ function AuthForm({ initialMode = "signin" }) {
         </>
       )}
       <div className="tabs">
-        <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>{t("auth.signin")}</button>
-        <button className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>{t("auth.signup")}</button>
+        <button className={mode === "signin" ? "active" : ""} onClick={() => { setMode("signin"); setError(""); }}>{t("auth.signin")}</button>
+        <button className={mode === "signup" ? "active" : ""} onClick={() => { setMode("signup"); setError(""); }}>{t("auth.signup")}</button>
       </div>
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate={signup}>
         {mode === "signup" && <input placeholder={t("auth.name")} value={name} onChange={(e) => setName(e.target.value)} />}
-        <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input type="email" placeholder="Email" required autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />
         {!DEV_MODE && (
-          <input type="password" placeholder={t("auth.password")} required
-            value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input type="password" placeholder={t(signup ? "auth.newPassword" : "auth.password")} required
+            autoComplete={signup ? "new-password" : "current-password"} minLength={signup ? 8 : undefined}
+            value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} />
+        )}
+        {strength > 0 && (
+          <div className={`pw-meter pw-${strength}`} aria-live="polite">
+            <div className="pw-bars"><i /><i /><i /></div>
+            <span>{t(`auth.pw.${strength}`)}</span>
+            {strength === 2 && <small>{t("auth.pw.tip")}</small>}
+          </div>
         )}
         {error && <p className="error">{error}</p>}
         <button className="primary" disabled={busy}>{mode === "signup" ? t("auth.create") : t("auth.signin")}</button>
       </form>
     </div>
+    </div>
+  );
+}
+
+/** Reminder for email sign-ups that have not clicked the confirmation link yet. */
+function VerifyBanner() {
+  const t = useT();
+  const email = unverifiedEmail();
+  const key = `verify_hidden_${email}`;
+  const [hidden, setHidden] = useState(() => { try { return !!sessionStorage.getItem(key); } catch { return false; } });
+  const [sent, setSent] = useState(false);
+  if (!email || hidden) return null;
+  const hide = () => { setHidden(true); try { sessionStorage.setItem(key, "1"); } catch { /* private mode */ } };
+  return (
+    <div className="verify-banner" role="status">
+      <span>{t("verify.text", { email })}</span>
+      <button className="ghost" disabled={sent} onClick={() => resendVerification().then(() => setSent(true), () => {})}>
+        {sent ? t("verify.sent") : t("verify.resend")}
+      </button>
+      <button className="ghost" onClick={hide}>{t("verify.hide")}</button>
     </div>
   );
 }
@@ -81,6 +118,7 @@ function Shell({ user, setUser }) {
     <>
       <Nav appName={APP_NAME} route={route.startsWith("/library") ? "/library" : ["/profile", "/settings"].includes(route) ? route : "/"}
         onSignOut={signOut} />
+      <VerifyBanner />
       <main className="page">{page}</main>
     </>
   );
