@@ -1,4 +1,4 @@
-import { displayLogin } from "../auth.js";
+import { accountLabel, addEmail, isLoginEmail } from "../auth.js";
 import { useState } from "react";
 import { api } from "../api.js";
 import { LanguageSwitch, useT } from "../i18n.jsx";
@@ -67,11 +67,52 @@ export function Settings({ user, onUserChanged, onSignOut }) {
         </label>
       </div>
 
+      {user.login && <RecoveryEmail user={user} onUserChanged={onUserChanged} />}
+
       <div className="card settings-block">
         <h2 className="tight">{t("settings.account")}</h2>
-        <p className="muted">{displayLogin(user.email)}</p>
+        <p className="muted">{accountLabel(user)}</p>
         <button onClick={onSignOut}>{t("settings.signout")}</button>
       </div>
     </>
+  );
+}
+
+/** Login accounts: add an email, confirm it by link, then it is used for "Forgot password?". */
+function RecoveryEmail({ user, onUserChanged }) {
+  const t = useT();
+  const confirmed = isLoginEmail(user.email) ? "" : user.email;
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(e) {
+    e.preventDefault();
+    setError("");
+    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email.trim())) return setError(t("email.err.format"));
+    setBusy(true);
+    try {
+      onUserChanged(await addEmail(email));
+      setEmail("");
+    } catch (err) {
+      setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form className="card settings-block" onSubmit={submit} noValidate>
+      <h2 className="tight">{t("email.title")}</h2>
+      <p className="muted small">{t("email.why")}</p>
+      {confirmed && <p className="ok">{t("email.confirmed", { email: confirmed })}</p>}
+      {user.pending_email && <p className="email-pending">{t("email.pending", { email: user.pending_email })}</p>}
+      <div className="row">
+        <input type="email" autoComplete="email" placeholder={confirmed ? t("email.newPlaceholder") : "name@ucu.edu.ua"}
+          value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />
+        <button className="primary" disabled={busy || !email.trim()}>{t("email.send")}</button>
+      </div>
+      {error && <p className="error">{error}</p>}
+    </form>
   );
 }

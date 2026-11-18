@@ -503,3 +503,10 @@ h2.tight { margin: 0 0 14px; font-size: 16px; }
 .pw-3 .pw-bars i { background: var(--ok); }
 .pw-3 span { color: var(--ok); }
 .auth-hint { margin: 0; }
+
+/* ---------- forgot password + recovery email ---------- */
+button.forgot-link { justify-self: center; height: 32px; font-size: 14px; color: var(--accent); }
+.forgot { display: grid; gap: 8px; padding-top: 6px; border-top: 1px solid var(--border); }
+.forgot p { margin: 0; }
+.forgot .row { margin: 0; }
+.email-pending { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-soft-fg); font-size: 14px; }

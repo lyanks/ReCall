@@ -1,7 +1,12 @@
+import logging
+
+import httpx
 import jwt
 
 from .ports import InvalidToken, Principal
 
+log = logging.getLogger(__name__)
+IDENTITY_TOOLKIT = "https://identitytoolkit.googleapis.com/v1/accounts"
 FIREBASE_JWKS = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com"
 
 
@@ -34,3 +39,43 @@ class DevAuthVerifier:
             raise InvalidToken("expected dev:<email>")
         email = token[4:].strip().lower()
         return Principal(uid=f"dev|{email}", email=email, name=email.split("@")[0])
+
+
+class FirebasePasswordAccounts:
+    """Firebase Auth REST API with the public web API key: the same calls the browser SDK makes."""
+
+    def __init__(self, api_key: str, timeout: float = 8.0):
+        self.api_key = api_key
+        self.timeout = timeout
+
+    def _post(self, method: str, body: dict) -> httpx.Response:
+        return httpx.post(f"{IDENTITY_TOOLKIT}:{method}", params={"key": self.api_key}, json=body, timeout=self.timeout)
+
+    def check_password(self, email: str, password: str) -> bool:
+        try:
+            r = self._post("signInWithPassword", {"email": email, "password": password, "returnSecureToken": False})
+        except httpx.HTTPError:
+            log.warning("Firebase signInWithPassword unreachable")
+            return False
+        return r.status_code == 200
+
+    def send_password_reset(self, email: str) -> None:
+        try:
+            r = self._post("sendOobCode", {"requestType": "PASSWORD_RESET", "email": email})
+            if r.status_code != 200:
+                log.info("password reset not sent: %s", r.text[:200])
+        except httpx.HTTPError:
+            log.warning("Firebase sendOobCode unreachable")
+
+
+class DevPasswordAccounts:
+    """Local development and tests: every password is right, reset emails are only recorded."""
+
+    def __init__(self):
+        self.resets: list[str] = []
+
+    def check_password(self, email: str, password: str) -> bool:
+        return True
+
+    def send_password_reset(self, email: str) -> None:
+        self.resets.append(email)

@@ -12,7 +12,8 @@ from .modules.analytics import api as analytics_api
 from .modules.files import api as files_api
 from .modules.files.adapters import PostgresFileStore
 from .modules.identity import api as identity_api
-from .modules.identity.adapters import DevAuthVerifier, FirebaseAuthVerifier
+from .modules.identity.adapters import (DevAuthVerifier, DevPasswordAccounts, FirebaseAuthVerifier,
+                                       FirebasePasswordAccounts)
 from .modules.ingestion.adapters import DEFAULT_EXTRACTORS, KeywordTopicClassifier
 from .modules.ingestion.service import IngestionService
 from .modules.library import api as library_api
@@ -27,6 +28,8 @@ def create_app() -> FastAPI:
     # ---- wire adapters to ports ----
     app.state.auth = (DevAuthVerifier() if config.AUTH_PROVIDER == "dev"
                       else FirebaseAuthVerifier(config.FIREBASE_PROJECT_ID))
+    app.state.passwords = (DevPasswordAccounts() if config.AUTH_PROVIDER == "dev"
+                           else FirebasePasswordAccounts(config.FIREBASE_WEB_API_KEY))
     app.state.tasks = InlineTaskQueue() if config.TASK_QUEUE == "inline" else ThreadTaskQueue()
     app.state.llm = ClaudeClient(config.ANTHROPIC_API_KEY, config.AI_MODEL) if config.ANTHROPIC_API_KEY else NoLLM()
     app.state.search = SemanticSearch(app.state.llm, fallback=KeywordRanker())
