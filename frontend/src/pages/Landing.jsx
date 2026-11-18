@@ -1,6 +1,7 @@
 // Landing page for signed-out visitors: hook, short tutorial with real screenshots, sign-up CTA.
 import { useEffect, useRef } from "react";
 import { Icon, SourceIcon } from "../components/Icons.jsx";
+import { SUPPORT_UAH, SUPPORT_URL, SupportButton } from "../components/Support.jsx";
 import { LanguageSwitch, useT } from "../i18n.jsx";
 
 /** Fades sections in as they scroll into view (skipped when the user prefers less motion). */
@@ -47,6 +48,7 @@ export function Landing({ appName }) {
       <header className="land-bar">
         <a className="brand" href="#/"><span className="mark">Re</span>{appName.slice(2)}</a>
         <LanguageSwitch compact />
+        <SupportButton className="land-bar-support" />
         <a className="btn ghost land-signin" href="#/signin">{t("land.signin")}</a>
         <a className="btn primary" href="#/signup">{t("land.cta")}</a>
       </header>
@@ -133,6 +135,13 @@ export function Landing({ appName }) {
         <h2>{t("land.end.t")}</h2>
         <p>{t("land.end.d")}</p>
         <a className="btn primary big" href="#/signup">{t("land.cta")} <Icon name="arrow" size={20} /></a>
+        {SUPPORT_URL && (
+          <p className="land-end-support">
+            <a href={SUPPORT_URL} target="_blank" rel="noopener noreferrer">
+              <Icon name="heart" size={16} />{t("support.landing", { n: SUPPORT_UAH })}
+            </a>
+          </p>
+        )}
       </section>
 
       <footer className="land-foot">

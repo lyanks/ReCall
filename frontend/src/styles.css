@@ -510,3 +510,17 @@ button.forgot-link { justify-self: center; height: 32px; font-size: 14px; color:
 .forgot p { margin: 0; }
 .forgot .row { margin: 0; }
 .email-pending { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-soft-fg); font-size: 14px; }
+
+/* ---------- support (donation) button ---------- */
+.btn.support { color: #b42318; border-color: color-mix(in srgb, #e5484d 45%, var(--border-strong)); background: var(--surface); }
+.btn.support:hover { background: #fdecec; border-color: #e5484d; color: #b42318; }
+:root[data-theme="dark"] .btn.support, :root[data-theme="dark"] .btn.support:hover { color: #ff8a80; background: var(--surface); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.support,
+  :root:not([data-theme="light"]) .btn.support:hover { color: #ff8a80; background: var(--surface); } }
+.nav-support { height: 38px; padding: 0 12px; font-size: 14px; margin-left: 8px; }
+.land-bar .land-bar-support { height: 40px; }
+.land-end-support { position: relative; z-index: 1; margin: 22px 0 0 !important; font-size: 15px !important; }
+.land-end-support a { display: inline-flex; align-items: center; gap: 6px; color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+.land-end-support a:hover { color: #ffe066; }
+@media (max-width: 760px) { .nav-support { margin: 8px 0 0; height: 44px; } }
+@media (max-width: 600px) { .land-bar .land-bar-support { display: none; } }

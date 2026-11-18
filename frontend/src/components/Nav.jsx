@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useT } from "../i18n.jsx";
 import { go } from "../router.js";
 import { Icon } from "./Icons.jsx";
+import { SupportButton } from "./Support.jsx";
 
 const LINKS = [
   ["/", "nav.home"],
@@ -26,6 +27,7 @@ export function Nav({ appName, route, onSignOut }) {
           <a key={path} href={`#${path}`} onClick={nav(path)} className={route === path ? "active" : ""}
             aria-current={route === path ? "page" : undefined}>{t(label)}</a>
         ))}
+        <SupportButton className="nav-support" />
         <button className="signout" onClick={onSignOut}><Icon name="logout" size={16} />{t("nav.signout")}</button>
       </nav>
     </header>
