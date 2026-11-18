@@ -8,7 +8,14 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 
 **Live prototype:** https://recall-ojro.onrender.com (free tier: the first visit after a quiet period takes ~50 s to wake up)
 
-## What works now (v0.2)
+## Try it in one minute
+
+1. Open https://recall-ojro.onrender.com and **sign up** with Google or with an email and password (Firebase Auth).
+2. Paste a link (an article, a YouTube video, a PDF link) or **drop a file** (lecture PDF, slides, a photo of notes) onto the page.
+3. The card shows "processing…" for a few seconds, then gets a topic and a short AI summary.
+4. Type what you remember into **Search**, in Ukrainian or English, e.g. "how a hash table handles collisions". ReCall finds the item by meaning, not by the exact words.
+
+## What works now (v0.8)
 
 - Sign up / sign in with **Firebase Auth** (Google or email + password). We do not store passwords.
 - Add a link: the API saves it and answers `202` at once; a background job fetches the page, extracts the text and picks a topic. The UI shows "processing…" until it is done.
@@ -17,9 +24,9 @@ ReCall is a web app for UCU students preparing for exams. A student drops a link
 - Search ranks by individual words (stems, typos, site name and URL count too; "mini games" finds "minigames.com"), with the matching passage shown.
 - **With an Anthropic API key (optional):** every saved link gets a 2–3 sentence summary (Ukrainian + English) and key topics from Claude; YouTube uses the video's subtitles when YouTube lets us read them. Search then works **by meaning and across languages** (a Ukrainian query finds an English article). Links the keyword rules cannot file get a topic from Claude. Without the key everything above keeps working as before.
 - Ukrainian and English interface: the user picks the language on the sign-in screen or in Settings (default follows the browser). AI summaries are shown in the chosen language.
-- Usage events (sign-up, sign-in, add, search) for the validation metrics in the feedback report.
-
 - **File upload:** drag a file onto the page or pick one (PDF, DOCX, PPTX, TXT, MD, PNG/JPG/WebP). Text is extracted in the background and the file opens again from its card. Limits so a 1000-page file cannot burn tokens: up to 10 MB per file (photos 5 MB), only the first 30 PDF pages / 60 slides are read, **the AI sees only the first 12,000 characters (≈ 8 pages, ~3–4k tokens)** while keyword search uses all the extracted text, 30 uploads a day and 100 MB of files per account. Photos of notes go to Claude as an image.
+- Edit an item's title; cards show a preview image where the page or video has one.
+- Usage events (sign-up, sign-in, add, search) for the validation metrics in the feedback report.
 
 Planned next: exam prep (summary or self-check questions per topic), Telegram bot.
 
@@ -30,10 +37,13 @@ Planned next: exam prep (summary or self-check questions per topic), Telegram bo
 ```
                  ┌──────────────── one container ────────────────┐
  browser ──HTTPS─┤ React SPA (static)   FastAPI  /api/*          │
-   │             │                       ├─ identity  (users)    │──► Postgres (Neon)
-   │ ID token    │                       ├─ library   (items)    │
-   └─Firebase────┤  AuthVerifier port ◄──┤  ingestion (extract)  │──► web pages, YouTube
-     Auth        │                       ├─ analytics (events)   │
+   │             │                       ├─ identity  (users)    │──► Postgres (Neon):
+   │ ID token    │                       ├─ library   (items)    │    items, users, events,
+   └─Firebase────┤  AuthVerifier port ◄──┤  ingestion (extract)  │    uploaded files
+     Auth        │                       ├─ files     (uploads)  │──► web pages, YouTube
+                 │                       ├─ search    (ranking)  │
+                 │                       ├─ ai        (Claude)   │──► Anthropic API (optional)
+                 │                       ├─ analytics (events)   │
                  │  TaskQueue port: in-process worker threads    │
                  └───────────────────────────────────────────────┘
 ```
@@ -45,6 +55,7 @@ Planned next: exam prep (summary or self-check questions per topic), Telegram bo
 | `ContentExtractor` | `WebPageExtractor`, `YouTubeExtractor`, `TikTokExtractor` (oEmbed), `InstagramExtractor` (og tags), `PdfLinkExtractor` (name only) | subtitles, PDF text via the worker + object storage |
 | `SearchIndex` | `SemanticSearch` (Claude picks matches by meaning) with `KeywordRanker` as fallback | pgvector + embeddings once libraries reach thousands of items |
 | `TopicClassifier` | `KeywordTopicClassifier`, Claude fills in what the rules leave Unsorted | |
+| `FileStore` | `PostgresFileStore` (bytes in Postgres) | S3-compatible storage (Cloudflare R2) |
 | `LLMClient` | `ClaudeClient` (Anthropic SDK, `claude-haiku-5-5`), `NoLLM` without a key, `FakeLLM` in tests | another model or vendor |
 
 ### Stack decisions ("start naive, add a block only with a reason")
@@ -80,7 +91,7 @@ frontend/   React + Vite SPA (src/auth.js is the Firebase adapter)
 infra/      docker-compose.yml (local stack), terraform/ (Render + Neon)
 docs/       plan, feedback report template
 Dockerfile  the one production image
-.github/    CI/CD workflow
+.github/    CI/CD workflow (tests → Docker build → deploy → smoke check of the live site)
 ```
 
 ## Run locally
@@ -92,6 +103,7 @@ cd backend
 python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 export AUTH_PROVIDER=dev                               # Windows: set AUTH_PROVIDER=dev
+export ANTHROPIC_API_KEY=sk-ant-...                    # optional: AI summaries + search by meaning
 alembic upgrade head
 uvicorn app.main:app --reload                          # API docs: http://localhost:8000/api/docs
 
@@ -105,6 +117,8 @@ npm run dev                                            # app: http://localhost:5
 ```bash
 docker compose -f infra/docker-compose.yml up --build  # http://localhost:8000
 ```
+
+Set `ANTHROPIC_API_KEY` in your shell first if you want the AI features in the container too.
 
 Tests: `cd backend && python -m pytest -q` (they also run the Alembic migrations).
 
@@ -120,10 +134,14 @@ New migration after changing a model: `cd backend && alembic revision --autogene
 | `TASK_QUEUE` | API | `thread` (default) or `inline` (tests) |
 | `ANTHROPIC_API_KEY` | API | optional; turns on AI summaries and search by meaning |
 | `AI_MODEL` | API | Claude model for both tasks; defaults to `claude-haiku-5-5` |
+| `CORS_ORIGINS` | API | comma-separated origins; only needed if the frontend is served from another host |
+| `STATIC_DIR` | API | built frontend to serve; defaults to `frontend/dist`; the Dockerfile sets `/srv/static` |
 
 The Firebase **web** config (`apiKey`, `authDomain`, …) is in `frontend/.env.production`. These values are public by design and end up in the JS bundle anyway; access is protected by Firebase's authorized-domains list. `npm run dev` without `.env.local` runs in dev mode.
 
 ## Deploy
+
+Our deployment: https://recall-ojro.onrender.com (Render web service from this repo's `Dockerfile`, Neon Postgres, Firebase Auth). To deploy your own copy:
 
 Firebase project: `recall-ucu-edu` (Authentication → Email/Password and Google enabled).
 
@@ -141,7 +159,7 @@ Firebase project: `recall-ucu-edu` (Authentication → Email/Password and Google
 Firebase console → **Authentication → Settings → Authorized domains → Add domain** → your Render host, e.g. `recall-xxxx.onrender.com`. Without this, Google sign-in fails with `auth/unauthorized-domain`.
 
 ### 4. CI/CD
-Render → service → **Settings → Deploy Hook** → copy the URL → GitHub repo → **Settings → Secrets and variables → Actions → New repository secret** `RENDER_DEPLOY_HOOK_URL`. From then on every push to `main` runs tests → Docker build → deploy.
+Render → service → **Settings → Deploy Hook** → copy the URL → GitHub repo → **Settings → Secrets and variables → Actions → New repository secret** `RENDER_DEPLOY_HOOK_URL`. From then on every push to `main` runs tests → Docker build → deploy, and a **smoke** job waits until the live site reports the new version and checks it answers. It can also be run by hand: **Actions → CI/CD → Run workflow**. To point it at your own host, change `APP_URL` at the top of `.github/workflows/ci.yml`.
 
 ### Alternative: Terraform (Render + Neon as code)
 ```bash
