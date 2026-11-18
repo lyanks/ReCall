@@ -100,19 +100,6 @@ def resolve_login(body: LoginIn, request: Request, db: Session = Depends(get_db)
     raise HTTPException(status.HTTP_401_UNAUTHORIZED, {"code": "auth/invalid-credential", "message": "Wrong login or password"})
 
 
-@router.post("/auth/reset", status_code=204)
-def reset_password(body: LoginIn, request: Request, db: Session = Depends(get_db)):
-    """Sends a reset link to the account's confirmed email. Always 204, so it cannot be used to probe accounts."""
-    value = body.login.strip().lower()
-    if "@" in value:
-        email = value
-    else:
-        user = _by_login(db, value)
-        email = user.email if user else ""
-    if email and not is_login_email(email):
-        _passwords(request).send_password_reset(email)
-
-
 @router.post("/sessions", status_code=204)
 def session_started(user: User = Depends(current_user), db: Session = Depends(get_db)):
     """Called by the frontend after each sign-in, so we can measure return visits."""

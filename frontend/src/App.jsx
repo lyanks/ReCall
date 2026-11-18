@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api.js";
-import { DEV_MODE, onUser, requestPasswordReset, signInGoogle, signInLogin, signOut, signUpLogin, takePendingName } from "./auth.js";
+import { DEV_MODE, onUser, signInGoogle, signInLogin, signOut, signUpLogin, takePendingName } from "./auth.js";
 import { Nav } from "./components/Nav.jsx";
 import { Home } from "./pages/Home.jsx";
 import { Landing } from "./pages/Landing.jsx";
@@ -82,40 +82,12 @@ function AuthForm({ initialMode = "signin" }) {
         {error && <p className="error">{error}</p>}
         <button className="primary" disabled={busy}>{mode === "signup" ? t("auth.create") : t("auth.signin")}</button>
       </form>
-      {!signup && !DEV_MODE && <ForgotPassword initial={login} />}
     </div>
     </div>
   );
 }
 
 /** "Forgot password?": a reset link goes to the confirmed email of the account (login or email). */
-function ForgotPassword({ initial }) {
-  const t = useT();
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
-  const [state, setState] = useState(""); // "" | "busy" | "sent" | "error"
-
-  if (!open) {
-    return <button type="button" className="ghost forgot-link" onClick={() => { setValue(initial); setOpen(true); }}>{t("forgot.link")}</button>;
-  }
-  async function send(e) {
-    e.preventDefault();
-    setState("busy");
-    try { await requestPasswordReset(value); setState("sent"); } catch { setState("error"); }
-  }
-  return (
-    <form className="forgot" onSubmit={send}>
-      <p className="muted small">{t("forgot.help")}</p>
-      <div className="row">
-        <input placeholder={t("auth.loginOrEmail")} required autoCapitalize="none" value={value}
-          onChange={(e) => { setValue(e.target.value); setState(""); }} />
-        <button disabled={state === "busy" || !value.trim()}>{t("forgot.send")}</button>
-      </div>
-      {state === "sent" && <p className="ok">{t("forgot.sent")}</p>}
-      {state === "error" && <p className="error">{t("forgot.error")}</p>}
-    </form>
-  );
-}
 
 function Shell({ user, setUser }) {
   const route = useRoute();

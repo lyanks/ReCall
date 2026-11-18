@@ -1,4 +1,4 @@
-import { accountLabel, addEmail, isLoginEmail } from "../auth.js";
+import { accountLabel } from "../auth.js";
 import { useState } from "react";
 import { api } from "../api.js";
 import { LanguageSwitch, useT } from "../i18n.jsx";
@@ -67,7 +67,6 @@ export function Settings({ user, onUserChanged, onSignOut }) {
         </label>
       </div>
 
-      {user.login && <RecoveryEmail user={user} onUserChanged={onUserChanged} />}
 
       <div className="card settings-block">
         <h2 className="tight">{t("settings.account")}</h2>
@@ -79,57 +78,3 @@ export function Settings({ user, onUserChanged, onSignOut }) {
 }
 
 /** Login accounts: add an email, confirm it by link, then it is used for "Forgot password?". */
-function RecoveryEmail({ user, onUserChanged }) {
-  const t = useT();
-  const confirmed = isLoginEmail(user.email) ? "" : user.email;
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [sent, setSent] = useState(false);
-
-  async function resend() {
-    setError(""); setBusy(true);
-    try { onUserChanged(await addEmail(user.pending_email)); setSent(true); }
-    catch (err) { setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message); }
-    finally { setBusy(false); }
-  }
-
-  async function submit(e) {
-    e.preventDefault();
-    setError("");
-    if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email.trim())) return setError(t("email.err.format"));
-    setBusy(true);
-    try {
-      onUserChanged(await addEmail(email));
-      setEmail("");
-      setSent(true);
-    } catch (err) {
-      setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <form className="card settings-block" onSubmit={submit} noValidate>
-      <h2 className="tight">{t("email.title")}</h2>
-      <p className="muted small">{t("email.why")}</p>
-      {confirmed && <p className="ok">{t("email.confirmed", { email: confirmed })}</p>}
-      {user.pending_email && (
-        <div className="email-pending">
-          <p>{t("email.pending", { email: user.pending_email })}</p>
-          <p className="small">{t("email.spam")}</p>
-          <button type="button" className="btn small" disabled={busy} onClick={resend}>
-            {sent ? t("email.resent") : t("email.resend")}
-          </button>
-        </div>
-      )}
-      <div className="row">
-        <input type="email" autoComplete="email" placeholder={confirmed ? t("email.newPlaceholder") : "name@ucu.edu.ua"}
-          value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} />
-        <button className="primary" disabled={busy || !email.trim()}>{t("email.send")}</button>
-      </div>
-      {error && <p className="error">{error}</p>}
-    </form>
-  );
-}
