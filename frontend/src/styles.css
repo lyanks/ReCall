@@ -524,3 +524,7 @@ button.forgot-link { justify-self: center; height: 32px; font-size: 14px; color:
 .land-end-support a:hover { color: #ffe066; }
 @media (max-width: 760px) { .nav-support { margin: 8px 0 0; height: 44px; } }
 @media (max-width: 600px) { .land-bar .land-bar-support { display: none; } }
+
+/* ---------- logo ---------- */
+.brand { display: inline-flex; align-items: center; gap: .32em; }
+.brand-logo { width: 1.3em; height: 1.3em; flex: none; border-radius: 28%; }

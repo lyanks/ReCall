@@ -46,7 +46,7 @@ export function Landing({ appName }) {
   return (
     <div className="land" ref={ref}>
       <header className="land-bar">
-        <a className="brand" href="#/"><span className="mark">Re</span>{appName.slice(2)}</a>
+        <a className="brand" href="#/"><img className="brand-logo" src="/logo.svg" alt="" width="32" height="32" /><span><span className="mark">Re</span>{appName.slice(2)}</span></a>
         <LanguageSwitch compact />
         <SupportButton className="land-bar-support" />
         <a className="btn ghost land-signin" href="#/signin">{t("land.signin")}</a>
@@ -145,7 +145,7 @@ export function Landing({ appName }) {
       </section>
 
       <footer className="land-foot">
-        <span className="brand small-brand"><span className="mark">Re</span>{appName.slice(2)}</span>
+        <span className="brand small-brand"><img className="brand-logo" src="/logo.svg" alt="" width="32" height="32" /><span><span className="mark">Re</span>{appName.slice(2)}</span></span>
         <span>{t("land.foot")}</span>
       </footer>
     </div>
