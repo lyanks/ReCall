@@ -19,6 +19,7 @@ const PATHS = {
   bolt: <path d="M13 2L4 14h7l-1 8 9-12h-7z" />,
   brain: <><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 3h1V4z" /><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 3h-1V4z" /></>,
   books: <><path d="M4 4h4v16H4zM10 4h4v16h-4z" /><path d="M16.5 4.5l3.8 1 -3.6 14.6-3.8-1" /></>,
+  heart: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" />,
   plus: <path d="M12 5v14M5 12h14" />,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   pencil: <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" />,

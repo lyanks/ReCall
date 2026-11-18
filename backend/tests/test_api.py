@@ -174,3 +174,59 @@ def test_rename_is_kept_on_refresh_and_empty_title_restores_it(monkeypatch):
     assert [i["id"] for i in client.get("/api/items", params={"q": "конспект"}, headers=u).json()] == [item["id"]]
     client.patch(f"/api/items/{item['id']}", json={"title": ""}, headers=u)
     assert client.get(f"/api/items/{item['id']}", headers=u).json()["title"] == original
+
+
+LOGIN_DOMAIN = "users.recall-ucu-edu.firebaseapp.com"
+
+
+def test_login_account_gets_login_and_resolves_without_leaking_email():
+    u = h(f"sofiia.d@{LOGIN_DOMAIN}")
+    me = client.get("/api/me", headers=u).json()
+    assert me["login"] == "sofiia.d"
+    # no real email yet: the login resolves to its internal address
+    r = client.post("/api/auth/resolve", json={"login": "Sofiia.D", "password": "x"})
+    assert r.json() == {"email": f"sofiia.d@{LOGIN_DOMAIN}"}
+    # unknown login: same shape, nothing to reveal
+    assert client.post("/api/auth/resolve", json={"login": "nobody1", "password": "x"}).json()["email"].startswith("nobody1@")
+
+    # the user adds an email; until Firebase confirms it the account email stays internal
+    me = client.patch("/api/me", json={"pending_email": "Sofiia@Gmail.com"}, headers=u).json()
+    assert me["pending_email"] == "sofiia@gmail.com" and me["name"] == "sofiia.d"
+    assert client.patch("/api/me", json={"pending_email": "not-an-email"}, headers=u).status_code == 422
+
+    # confirmed while signed out: the right password finds the new address and saves it
+    pw = app.state.passwords
+    checks = []
+    def check(email, password):
+        checks.append(email)
+        return email == "sofiia@gmail.com" and password == "Kotyk_7exams"
+    orig = pw.check_password
+    pw.check_password = check
+    try:
+        assert client.post("/api/auth/resolve", json={"login": "sofiia.d", "password": "wrong1234"}).status_code == 401
+        r = client.post("/api/auth/resolve", json={"login": "sofiia.d", "password": "Kotyk_7exams"})
+        assert r.json() == {"email": "sofiia@gmail.com"}
+    finally:
+        pw.check_password = orig
+
+    # password reset by login goes to the confirmed address only
+    pw.resets.clear()
+    assert client.post("/api/auth/reset", json={"login": "sofiia.d"}).status_code == 204
+    assert client.post("/api/auth/reset", json={"login": "nobody1"}).status_code == 204
+    assert client.post("/api/auth/reset", json={"login": f"x@{LOGIN_DOMAIN}"}).status_code == 204
+    assert pw.resets == ["sofiia@gmail.com"]
+
+
+def test_token_with_new_email_updates_profile_and_keeps_login():
+    u = h(f"olena.k@{LOGIN_DOMAIN}")
+    client.get("/api/me", headers=u)
+    client.patch("/api/me", json={"pending_email": "olena@ucu.edu.ua"}, headers=u)
+    # Firebase keeps the uid when the email changes; the dev verifier derives uid from email, so simulate it
+    from app.db import SessionLocal
+    from app.modules.identity.models import User
+    from app.modules.identity.ports import Principal
+    from app.modules.identity.service import get_or_create_user
+    with SessionLocal() as db:
+        user = get_or_create_user(db, Principal(uid=f"dev|olena.k@{LOGIN_DOMAIN}", email="olena@ucu.edu.ua"))
+        assert (user.email, user.login, user.pending_email) == ("olena@ucu.edu.ua", "olena.k", "")
+        assert db.query(User).filter(User.login == "olena.k").count() == 1

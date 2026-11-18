@@ -18,6 +18,12 @@ DATABASE_URL = _db_url()
 # "firebase" in every deployed environment; "dev" only for local work and tests.
 AUTH_PROVIDER = os.getenv("AUTH_PROVIDER", "firebase")
 FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "recall-ucu-edu")
+# Firebase *web* API key (public, also in frontend/.env.production). Used to check a password before revealing
+# which email a login belongs to, and to send password-reset emails.
+FIREBASE_WEB_API_KEY = os.getenv("FIREBASE_WEB_API_KEY", "AIzaSyCTtS61yO9FjVAvk8InxDyvgmEm6MnTSQc")
+# Password accounts sign up with a login; Firebase stores it as "<login>@LOGIN_DOMAIN" (no mailbox behind it).
+# Must match LOGIN_DOMAIN in frontend/src/auth.js.
+LOGIN_DOMAIN = "users.recall-ucu-edu.firebaseapp.com"
 
 # "thread" runs background jobs in-process; "inline" runs them immediately (tests).
 TASK_QUEUE = os.getenv("TASK_QUEUE", "thread")

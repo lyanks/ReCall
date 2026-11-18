@@ -18,3 +18,11 @@ class AuthVerifier(Protocol):
     We do not store passwords ourselves (course module 9: use an auth provider)."""
 
     def verify(self, token: str) -> Principal: ...
+
+
+class PasswordAccounts(Protocol):
+    """Port: the auth provider's email+password accounts, seen from the server (Firebase REST API)."""
+
+    def check_password(self, email: str, password: str) -> bool: ...
+
+    def send_password_reset(self, email: str) -> None: ...

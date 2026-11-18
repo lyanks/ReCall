@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api.js";
-import { DEV_MODE, onUser, signInEmail, signInGoogle, signOut, signUpEmail } from "./auth.js";
+import { DEV_MODE, onUser, requestPasswordReset, signInGoogle, signInLogin, signOut, signUpLogin, takePendingName } from "./auth.js";
 import { Nav } from "./components/Nav.jsx";
 import { Home } from "./pages/Home.jsx";
 import { Landing } from "./pages/Landing.jsx";
@@ -10,6 +10,7 @@ import { Settings } from "./pages/Settings.jsx";
 import { I18nProvider, LanguageSwitch, useT } from "./i18n.jsx";
 import { applyTheme, loadPrefs } from "./prefs.js";
 import { go, useRoute } from "./router.js";
+import { loginProblem, passwordProblem, passwordStrength } from "./validate.js";
 
 const APP_NAME = "ReCall";
 const AUTH_ROUTES = ["/signin", "/signup"];
@@ -18,7 +19,7 @@ applyTheme(loadPrefs().theme);
 function AuthForm({ initialMode = "signin" }) {
   const t = useT();
   const [mode, setMode] = useState(initialMode);
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -30,9 +31,16 @@ function AuthForm({ initialMode = "signin" }) {
     try { await fn(); } catch (err) { setError(err.code && t(err.code) !== err.code ? t(err.code) : err.message); } finally { setBusy(false); }
   }
 
+  const signup = mode === "signup";
+  const strength = signup && !DEV_MODE ? passwordStrength(password, login) : 0;
+
   function submit(e) {
     e.preventDefault();
-    run(() => (mode === "signup" ? signUpEmail(email, password, name) : signInEmail(email, password)));
+    if (signup) {
+      const problem = loginProblem(login) || (DEV_MODE ? "" : passwordProblem(password, login));
+      if (problem) return setError(t(problem));
+    }
+    run(() => (signup ? signUpLogin(login, password, name) : signInLogin(login, password)));
   }
 
   return (
@@ -50,21 +58,62 @@ function AuthForm({ initialMode = "signin" }) {
         </>
       )}
       <div className="tabs">
-        <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>{t("auth.signin")}</button>
-        <button className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>{t("auth.signup")}</button>
+        <button className={mode === "signin" ? "active" : ""} onClick={() => { setMode("signin"); setError(""); }}>{t("auth.signin")}</button>
+        <button className={mode === "signup" ? "active" : ""} onClick={() => { setMode("signup"); setError(""); }}>{t("auth.signup")}</button>
       </div>
       <form onSubmit={submit}>
         {mode === "signup" && <input placeholder={t("auth.name")} value={name} onChange={(e) => setName(e.target.value)} />}
-        <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input placeholder={t(signup ? "auth.newLogin" : "auth.loginOrEmail")} aria-label={t("auth.login")} required
+          autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={signup ? 20 : 120}
+          value={login} onChange={(e) => { setLogin(e.target.value); setError(""); }} />
         {!DEV_MODE && (
-          <input type="password" placeholder={t("auth.password")} required
-            value={password} onChange={(e) => setPassword(e.target.value)} />
+          <input type="password" placeholder={t(signup ? "auth.newPassword" : "auth.password")} required
+            autoComplete={signup ? "new-password" : "current-password"} minLength={signup ? 8 : undefined}
+            value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} />
         )}
+        {strength > 0 && (
+          <div className={`pw-meter pw-${strength}`} aria-live="polite">
+            <div className="pw-bars"><i /><i /><i /></div>
+            <span>{t(`auth.pw.${strength}`)}</span>
+            {strength === 2 && <small>{t("auth.pw.tip")}</small>}
+          </div>
+        )}
+        {signup && !DEV_MODE && <p className="muted small auth-hint">{t("auth.noReset")}</p>}
         {error && <p className="error">{error}</p>}
         <button className="primary" disabled={busy}>{mode === "signup" ? t("auth.create") : t("auth.signin")}</button>
       </form>
+      {!signup && !DEV_MODE && <ForgotPassword initial={login} />}
     </div>
     </div>
+  );
+}
+
+/** "Forgot password?": a reset link goes to the confirmed email of the account (login or email). */
+function ForgotPassword({ initial }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const [state, setState] = useState(""); // "" | "busy" | "sent" | "error"
+
+  if (!open) {
+    return <button type="button" className="ghost forgot-link" onClick={() => { setValue(initial); setOpen(true); }}>{t("forgot.link")}</button>;
+  }
+  async function send(e) {
+    e.preventDefault();
+    setState("busy");
+    try { await requestPasswordReset(value); setState("sent"); } catch { setState("error"); }
+  }
+  return (
+    <form className="forgot" onSubmit={send}>
+      <p className="muted small">{t("forgot.help")}</p>
+      <div className="row">
+        <input placeholder={t("auth.loginOrEmail")} required autoCapitalize="none" value={value}
+          onChange={(e) => { setValue(e.target.value); setState(""); }} />
+        <button disabled={state === "busy" || !value.trim()}>{t("forgot.send")}</button>
+      </div>
+      {state === "sent" && <p className="ok">{t("forgot.sent")}</p>}
+      {state === "error" && <p className="error">{t("forgot.error")}</p>}
+    </form>
   );
 }
 
@@ -97,7 +146,10 @@ function Root() {
   useEffect(() => onUser(async (u) => {
     if (!u) return setUser(null);
     try {
-      const me = await api("/me");
+      let me = await api("/me");
+      // the name typed at sign-up (Firebase's ID token does not carry it yet on the very first request)
+      const pending = takePendingName();
+      if (pending && !me.name) me = await api("/me", { method: "PATCH", body: { name: pending } });
       await api("/sessions", { method: "POST" });
       setUser(me);
     } catch {

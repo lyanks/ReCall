@@ -131,6 +131,7 @@ New migration after changing a model: `cd backend && alembic revision --autogene
 | `DATABASE_URL` | API | Postgres URL (Neon); defaults to local SQLite |
 | `AUTH_PROVIDER` | API | `firebase` (default) or `dev` (local only: sign in by email, no password) |
 | `FIREBASE_PROJECT_ID` | API | Firebase project whose ID tokens are accepted; defaults to `recall-ucu-edu` |
+| `FIREBASE_WEB_API_KEY` | API | public Firebase web key used for sign-in by login and password-reset emails; defaults to the one in `frontend/.env.production` |
 | `TASK_QUEUE` | API | `thread` (default) or `inline` (tests) |
 | `ANTHROPIC_API_KEY` | API | optional; turns on AI summaries and search by meaning |
 | `AI_MODEL` | API | Claude model for both tasks; defaults to `claude-haiku-5-5` |

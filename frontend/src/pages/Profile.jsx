@@ -1,3 +1,4 @@
+import { accountLabel } from "../auth.js";
 import { useEffect, useState } from "react";
 import { api } from "../api.js";
 import { SourceIcon } from "../components/Icons.jsx";
@@ -18,7 +19,7 @@ export function Profile({ user }) {
         <div className="avatar" aria-hidden="true">{(user.name || user.email)[0]?.toUpperCase()}</div>
         <div>
           <div className="profile-name">{user.name || t("profile.noName")}</div>
-          <div className="muted">{user.email}</div>
+          <div className="muted">{accountLabel(user)}</div>
           <div className="muted small">{t("profile.since", { date: since })}</div>
         </div>
       </div>
