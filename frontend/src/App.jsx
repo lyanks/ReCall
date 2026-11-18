@@ -48,7 +48,7 @@ function AuthForm({ initialMode = "signin" }) {
     <div className="card auth">
       <a className="auth-back" href="#/">{t("auth.back")}</a>
       <div className="auth-lang"><LanguageSwitch compact /></div>
-      <h1 className="brand"><span className="mark">Re</span>{APP_NAME.slice(2)}</h1>
+      <h1 className="brand"><img className="brand-logo" src="/logo.svg" alt="" width="32" height="32" /><span><span className="mark">Re</span>{APP_NAME.slice(2)}</span></h1>
       <p className="auth-tagline">{t("tagline")}</p>
       {DEV_MODE && <p className="dev">{t("auth.dev")}</p>}
       {!DEV_MODE && (

@@ -18,7 +18,7 @@ export function Nav({ appName, route, onSignOut }) {
 
   return (
     <header className="topbar">
-      <a className="brand" href="#/" onClick={nav("/")} aria-label={appName}><span className="mark">Re</span>{appName.slice(2)}</a>
+      <a className="brand" href="#/" onClick={nav("/")} aria-label={appName}><img className="brand-logo" src="/logo.svg" alt="" width="32" height="32" /><span><span className="mark">Re</span>{appName.slice(2)}</span></a>
       <button className="burger ghost icon" aria-label={t("nav.menu")} aria-expanded={open} onClick={() => setOpen(!open)}>
         <Icon name={open ? "close" : "menu"} />
       </button>
